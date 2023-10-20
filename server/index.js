@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 
 const studentRouter = require('./routes/student')
-const studentColl = require('./utils/dbConfig')
+const { studentColl } = require('./utils/dbConfig')
 
 const { generateAuthToken } = require('./utils/auth')
 
@@ -28,7 +28,11 @@ app.post('/login', async (req, res) => {
         const access_token = generateAuthToken({ user: req.body.userid, role: req.body.role })
 
         if (req.body.password == user.password) {
-            res.status(200).send(access_token);
+            res.status(200).send({
+                userid: req.body.userid,
+                role: req.body.role,
+                access_token
+            }); 
         } else {
             res.status(400).send("Authentication Failed")
         }
