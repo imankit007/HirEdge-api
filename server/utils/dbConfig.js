@@ -19,6 +19,10 @@ client.connect().then(() => {
 const DB = client.db("HirEdge");
 
 const studentColl = DB.collection("Students");
+const hodColl = DB.collection("HOD");
+const tpoColl = DB.collection("TPO");
+const alumniColl = DB.collection("Alumni");
+const companyColl = DB.collection("Company");
 
 
-module.exports = { studentColl }
+module.exports = { studentColl, hodColl, tpoColl, alumniColl, companyColl }

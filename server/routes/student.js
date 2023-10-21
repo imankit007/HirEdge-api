@@ -4,9 +4,8 @@ const router = express.Router();
 const { authenticateToken } = require('../utils/auth')
 
 
-router.get('/profile', authenticateToken, (req, res) => {
-
-    res.send(req.user);
+router.get('/student/profile', authenticateToken, (req, res) => {
+    res.send("Hello");
 })
 
 
