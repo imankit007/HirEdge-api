@@ -25,6 +25,7 @@ app.get('/', (req, res) => {
 
 app.post('/login', async (req, res) => {
 
+    console.log('Login Requested')
 
     let user = null;
     try {
@@ -49,11 +50,9 @@ app.post('/login', async (req, res) => {
 
         if (req.body.role == 'alumni') {
             user = await alumniColl.findOne({
-                ' user_id': req.body.user_id.toString().toLowerCase()
+                'user_id': req.body.user_id.toString().toLowerCase()
             })
         }
-
-
         if (user == null) {
             res.status(401).send({
                 'message': 'User ID does not exist'
@@ -72,7 +71,36 @@ app.post('/login', async (req, res) => {
                     }
                 })
             }
-            console.log(refresh_token)
+
+            if (req.body.role == 'tpo') {
+                await tpoColl.findOneAndUpdate({
+                    'user_id': req.body.user_id.toString().toLowerCase()
+                }, {
+                    $set: {
+                        'refresh_token': refresh_token,
+                    }
+                })
+            }
+
+            if (req.body.role == 'hod') {
+                await hodColl.findOneAndUpdate({
+                    'user_id': req.body.user_id.toString().toLowerCase()
+                }, {
+                    $set: {
+                        'refresh_token': refresh_token,
+                    }
+                })
+            }
+
+            if (req.body.role == 'alumni') {
+                await alumniColl.findOneAndUpdate({
+                    'user_id': req.body.user_id.toString().toLowerCase()
+                }, {
+                    $set: {
+                        'refresh_token': refresh_token,
+                    }
+                })
+            }
             res.cookie('refresh_token', `${req.body.role} ${refresh_token}`, {
                 httpOnly: true, maxAge: 24 * 60 * 60 * 1000,
                 sameSite: 'none',
@@ -81,7 +109,8 @@ app.post('/login', async (req, res) => {
             res.status(200).json({
                 user_id: req.body.user_id,
                 role: req.body.role,
-                access_token
+                access_token,
+                refresh_token
             }); 
         } else {
             res.status(400).send({ message: "Authentication Failed" })
@@ -92,6 +121,8 @@ app.post('/login', async (req, res) => {
 })
 
 app.get('/refresh', async (req, res) => {
+
+    console.log('Refresh Token Requested');
 
     const cookies = req.cookies;
 
@@ -108,27 +139,42 @@ app.get('/refresh', async (req, res) => {
             'refresh_token': refresh_token
         })
     }
+    if (role == 'tpo') {
+        user = await tpoColl.findOne({
+            'refresh_token': refresh_token
+        })
+    }
+    if (role == 'hod') {
+        user = await hodColl.findOne({
+            'refresh_token': refresh_token
+        })
+    }
+    if (role == 'alumni') {
+        user = await alumniColl.findOne({
+            'refresh_token': refresh_token
+        })
+    }
     if (!user) {
         return res.sendStatus(401)
     }
-
     jwt.verify(
         refresh_token,
         process.env.TOKEN_SECRET, (err, decoded) => {
             if (err || user.user_id !== decoded.user_id) {
                 return res.sendStatus(403);
             }
+            console.log(decoded);
             const access_token = jwt.sign({
-                'user_id': decoded.uder_id,
+                'user_id': decoded.user_id,
                 'role': decoded.role
             },
                 process.env.TOKEN_SECRET,
                 {
                     expiresIn: '1800s'
-                }
+                }   
             );
-            return res.json({
-                access_token, role: decoded.role
+            return res.status(200).json({
+                access_token, role: decoded.role    
             })
         }
     )
@@ -143,7 +189,7 @@ app.get('/logout', (req, res) => {
 
 
 app.listen(5000, async () => {
-    console.log("API is working");
+    console.log("Listening at PORT 5000");
 })
 
 
