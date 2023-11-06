@@ -40,4 +40,4 @@ const alumniColl = DB.collection("Alumni");
 const companyColl = DB.collection("Company");
 
 
-module.exports = { studentColl, hodColl, tpoColl, alumniColl, companyColl }
+module.exports = { studentColl, hodColl, tpoColl, alumniColl, companyColl, con }

@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 var cookieParser = require('cookie-parser');
 dotenv.config();
-const { studentColl, tpoColl, hodColl, alumniColl, companyColl } = require('./utils/dbConfig');
+const { studentColl, tpoColl, hodColl, alumniColl, companyColl, con } = require('./utils/dbConfig');
 
 var app = express();
 app.use(cors({
@@ -69,49 +69,18 @@ app.post('/login', async (req, res) => {
             const access_token = generateAuthToken({ user_id: req.body.user_id, role: req.body.role }, '1800s')
             const refresh_token = generateAuthToken({ user_id: req.body.user_id, role: req.body.role }, `${7 * 24 * 60 * 60}s`)
 
-            if (req.body.role == 'student') {
-                await studentColl.findOneAndUpdate({
-                    'user_id': req.body.user_id.toString().toLowerCase()
-                }, {
-                    $set: {
-                        'refresh_token': refresh_token,
-                    }
-                })
-            }
+            con.execute('INSERT INTO auth (refresh_token, user_id, role )VALUES (?,?,?)', [
+                refresh_token, req.body.user_id, req.body.role
+            ], function (err, results) {
+                console.log(err);
+            })
 
-            if (req.body.role == 'tpo') {
-                await tpoColl.findOneAndUpdate({
-                    'user_id': req.body.user_id.toString().toLowerCase()
-                }, {
-                    $set: {
-                        'refresh_token': refresh_token,
-                    }
-                })
-            }
 
-            if (req.body.role == 'hod') {
-                await hodColl.findOneAndUpdate({
-                    'user_id': req.body.user_id.toString().toLowerCase()
-                }, {
-                    $set: {
-                        'refresh_token': refresh_token,
-                    }
-                })
-            }
-
-            if (req.body.role == 'alumni') {
-                await alumniColl.findOneAndUpdate({
-                    'user_id': req.body.user_id.toString().toLowerCase()
-                }, {
-                    $set: {
-                        'refresh_token': refresh_token,
-                    }
-                })
-            }
-            res.cookie('refresh_token', `${req.body.role} ${refresh_token}`, {
-                httpOnly: true, maxAge: 24 * 60 * 60 * 1000,
+            res.cookie('refresh_token', `${refresh_token}`, {
+                httpOnly: true,
+                maxAge: 24 * 60 * 60 * 1000,
                 sameSite: 'none',
-                secure: true
+                secure: true,
             })
             res.status(200).json({
                 user_id: req.body.user_id,
@@ -137,37 +106,15 @@ app.get('/refresh', async (req, res) => {
 
     const refreshToken = cookies.refresh_token;
 
-    const [role, refresh_token] = refreshToken.split(' ')
+    con.execute('SELECT * from auth WHERE refresh_token=?', [refreshToken], function (err, results) {
+        if (err) throw err;
 
-    let user;
 
-    if (role == 'student') {
-        user = await studentColl.findOne({
-            'refresh_token': refresh_token
-        })
-    }
-    if (role == 'tpo') {
-        user = await tpoColl.findOne({
-            'refresh_token': refresh_token
-        })
-    }
-    if (role == 'hod') {
-        user = await hodColl.findOne({
-            'refresh_token': refresh_token
-        })
-    }
-    if (role == 'alumni') {
-        user = await alumniColl.findOne({
-            'refresh_token': refresh_token
-        })
-    }
-    if (!user) {
-        return res.sendStatus(401)
-    }
-    jwt.verify(
-        refresh_token,
-        process.env.TOKEN_SECRET, (err, decoded) => {
-            if (err || user.user_id !== decoded.user_id) {
+
+        jwt.verify(
+            results[0].refresh_token,
+            process.env.TOKEN_SECRET, (err, decoded) => {
+                if (err || results[0].user_id.toLowerCase() !== decoded.user_id.toLowerCase()) {
                 return res.sendStatus(403);
             }
             console.log(decoded);
@@ -178,13 +125,15 @@ app.get('/refresh', async (req, res) => {
                 process.env.TOKEN_SECRET,
                 {
                     expiresIn: '1800s'
-                }   
+                }
             );
             return res.status(200).json({
-                access_token, role: decoded.role    
+                access_token, role: decoded.role
             })
         }
-    )
+        )
+
+    })
 
 })
 
@@ -192,42 +141,13 @@ app.get('/logout', authenticateToken, async (req, res) => {
 
     console.log('Logout Requested');
 
-    if (req.user.role == 'student') {
-        user = await studentColl.findOneAndUpdate({
-            'user_id': req.user.user_id
-        }, {
-            $set: {
-                "refresh_token": ""
-            }
-        })
-    }
-    if (req.user.role == 'tpo') {
-        user = await tpoColl.findOneAndUpdate({
-            'user_id': req.user.user_id
-        }, {
-            $set: {
-                "refresh_token": ""
-            }
-        })
-    }
-    if (req.user.role == 'hod') {
-        user = await hodColl.findOneAndUpdate({
-            'user_id': req.user.user_id
-        }, {
-            $set: {
-                "refresh_token": ""
-            }
-        })
-    }
-    if (req.user.role == 'alumni') {
-        user = await alumniColl.findOneAndUpdate({
-            'user_id': req.user.user_id
-        }, {
-            $set: {
-                "refresh_token": ""
-            }
-        })
-    }
+    const cookies = req.cookies;
+    const refreshToken = cookies.refresh_token;
+
+    con.execute('DELETE FROM auth where refresh_token=?', [refreshToken], function (err, results) {
+        if (err) throw err;
+        console.log(results);
+    })
     res.clearCookie('refresh_token').status(200).send("Logout Successful")
 })
 
