@@ -9,6 +9,11 @@ function generateAuthToken(username, expiresIn) {
 
 
 function authenticateToken(req, res, next) {
+
+    console.log("auth ")
+
+    console.log(req.headers);
+
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
 
@@ -20,7 +25,6 @@ function authenticateToken(req, res, next) {
         if (err) return res.sendStatus(403)
 
         req.user = user
-
         next()
     })
 }

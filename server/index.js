@@ -3,13 +3,9 @@ const cors = require('cors')
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 var cookieParser = require('cookie-parser');
-
-const studentRouter = require('./routes/student')
-const { studentColl, tpoColl, hodColl, alumniColl, companyColl } = require('./utils/dbConfig')
-
-const { generateAuthToken } = require('./utils/auth')
-
 dotenv.config();
+const { studentColl, tpoColl, hodColl, alumniColl, companyColl } = require('./utils/dbConfig');
+
 var app = express();
 app.use(cors({
     origin: 'http://localhost:3000',
@@ -18,7 +14,18 @@ app.use(cors({
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
-app.use(studentRouter)
+
+const { generateAuthToken, authenticateToken } = require('./utils/auth')
+
+//router for student module
+const studentRouter = require('./routes/student');
+
+//router for tpo module
+const tpoRouter = require('./routes/tpo');
+
+
+app.use(studentRouter);
+app.use(tpoRouter);
 app.get('/', (req, res) => {
     res.send({ "message": "API is working" })
 })
@@ -181,10 +188,47 @@ app.get('/refresh', async (req, res) => {
 
 })
 
-app.get('/logout', (req, res) => {
+app.get('/logout', authenticateToken, async (req, res) => {
 
-    res.clearCookie('refresh_token').send("Logout Successful")
+    console.log('Logout Requested');
 
+    if (req.user.role == 'student') {
+        user = await studentColl.findOneAndUpdate({
+            'user_id': req.user.user_id
+        }, {
+            $set: {
+                "refresh_token": ""
+            }
+        })
+    }
+    if (req.user.role == 'tpo') {
+        user = await tpoColl.findOneAndUpdate({
+            'user_id': req.user.user_id
+        }, {
+            $set: {
+                "refresh_token": ""
+            }
+        })
+    }
+    if (req.user.role == 'hod') {
+        user = await hodColl.findOneAndUpdate({
+            'user_id': req.user.user_id
+        }, {
+            $set: {
+                "refresh_token": ""
+            }
+        })
+    }
+    if (req.user.role == 'alumni') {
+        user = await alumniColl.findOneAndUpdate({
+            'user_id': req.user.user_id
+        }, {
+            $set: {
+                "refresh_token": ""
+            }
+        })
+    }
+    res.clearCookie('refresh_token').status(200).send("Logout Successful")
 })
 
 
@@ -193,6 +237,3 @@ app.listen(5000, async () => {
 })
 
 
-module.exports = {
-    studentColl
-}
