@@ -2,8 +2,4 @@
 
 ## To start the server
 
-
-```javascript
-    npm run dev
-```
-
+npm run dev
