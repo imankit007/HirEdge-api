@@ -1,6 +1,7 @@
 
 
 create database authentication;
+
 use authentication;
 
 create table auth (
