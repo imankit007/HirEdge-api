@@ -3,7 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken')
 
 
-const { studentColl } = require('../utils/dbConfig');
+const { studentColl, companyColl } = require('../utils/dbConfig');
 
 
 function authenticateToken(req, res, next) {
@@ -33,6 +33,23 @@ router.get('/student/profile', authenticateToken, async (req, res) => {
     })
 
     res.status(200).send(user);
+})
+
+
+router.get('/student/jobs', async (req, res) => {
+
+    const cursor = companyColl.find({}, {
+        projection: {
+            '_id': 0
+        }
+    })
+    let data = [];
+    for await (const doc of cursor) {
+        data.push(doc);
+    }
+
+    res.status(200).send(data);
+
 })
 
 
