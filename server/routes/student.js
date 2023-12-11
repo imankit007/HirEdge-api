@@ -24,15 +24,15 @@ function authenticateToken(req, res, next) {
 
 router.get('/student/profile', authenticateToken, async (req, res) => {
 
-    console.log(req.user);
-
     const user = await studentColl.findOne({
         'user_id': req.user.user_id.toString().toLowerCase()
+    }, {
+        projection: {
+            '_id': 0, 'password': 0,
+        }
     })
 
-
-
-    res.send(user);
+    res.status(200).send(user);
 })
 
 

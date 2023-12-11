@@ -41,13 +41,11 @@ app.post('/login', async (req, res) => {
                 'user_id': req.body.user_id.toString().toLowerCase()
             })
         }
-
         if (req.body.role == 'tpo') {
             user = await tpoColl.findOne({
                 'user_id': req.body.user_id.toString().toLowerCase()
             })
         }
-
         if (req.body.role == 'hod') {
             user = await hodColl.findOne({
                 'user_id': req.body.user_id.toString().toLowerCase()
@@ -107,6 +105,7 @@ app.get('/refresh', async (req, res) => {
     } else {
         con.execute('SELECT * from `auth` WHERE `refresh_token` = ?', [refreshToken], function (err, results) {
             if (err) throw err;
+            if (results.length == 0) return res.sendStatus(401);
             jwt.verify(
                 results[0].refresh_token,
                 process.env.TOKEN_SECRET, (err, decoded) => {
