@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken')
 
 
 const { studentColl, companyColl } = require('../utils/dbConfig');
+const { UUID } = require('mongodb');
 
 
 function authenticateToken(req, res, next) {
@@ -21,7 +22,6 @@ function authenticateToken(req, res, next) {
     })
 }
 
-
 router.get('/student/profile', authenticateToken, async (req, res) => {
 
     const user = await studentColl.findOne({
@@ -37,7 +37,6 @@ router.get('/student/profile', authenticateToken, async (req, res) => {
 
 
 router.get('/student/jobs', async (req, res) => {
-
     const cursor = companyColl.find({}, {
         projection: {
             '_id': 0
@@ -47,8 +46,23 @@ router.get('/student/jobs', async (req, res) => {
     for await (const doc of cursor) {
         data.push(doc);
     }
-
     res.status(200).send(data);
+})
+
+router.post('/student/addquery', (req, res) => {
+
+    const query = {
+        query_id: 1,
+        company_id: req.query.company_id,
+        query_type: req.query.query_type,
+        query_title: req.body.query_title,
+        query_description: req.body.query_description,
+    };
+
+    res.status(200).send({
+        "message": "Query Posted Successfully",
+        data: query
+    })
 
 })
 

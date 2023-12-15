@@ -28,8 +28,15 @@ function authenticateToken(req, res, next) {
 }
 
 
-router.get('/tpo/profile', authenticateToken, (req, res) => {
-    res.send("Hello");
+router.get('/alumni/profile', authenticateToken, (req, res) => {
+
+    const user = {
+        user_id: req.body.user_id,
+
+    }
+
+
+    res.status(200).send("Hello");
 })
 
 

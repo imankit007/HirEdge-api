@@ -34,27 +34,29 @@ app.post('/login', async (req, res) => {
 
     console.log('Login Requested')
 
+    req.body.user_id = req.body.user_id.toString().toLowerCase();
+
     let user = null;
     try {
         if (req.body.role == 'student') {
             user = await studentColl.findOne({
-                'user_id': req.body.user_id.toString().toLowerCase()
+                'user_id': req.body.user_id
             })
         }
         if (req.body.role == 'tpo') {
             user = await tpoColl.findOne({
-                'user_id': req.body.user_id.toString().toLowerCase()
+                'user_id': req.body.user_id
             })
         }
         if (req.body.role == 'hod') {
             user = await hodColl.findOne({
-                'user_id': req.body.user_id.toString().toLowerCase()
+                'user_id': req.body.user_id
             })
         }
 
         if (req.body.role == 'alumni') {
             user = await alumniColl.findOne({
-                'user_id': req.body.user_id.toString().toLowerCase()
+                'user_id': req.body.user_id
             })
         }
         if (user == null) {
@@ -112,7 +114,6 @@ app.get('/refresh', async (req, res) => {
                     if (err || results[0].user_id.toLowerCase() !== decoded.user_id.toLowerCase()) {
                         return res.sendStatus(403);
                     }
-                    console.log(decoded);
                     const access_token = jwt.sign({
                         'user_id': decoded.user_id,
                         'role': decoded.role
@@ -142,7 +143,6 @@ app.get('/logout', async (req, res) => {
 
     con.execute('DELETE FROM auth where refresh_token=?', [refreshToken], function (err, results) {
         if (err) throw err;
-        console.log(results);
     })
     res.clearCookie('refresh_token').status(200).send("Logout Successful")
 })
