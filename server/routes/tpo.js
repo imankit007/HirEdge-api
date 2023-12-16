@@ -39,12 +39,11 @@ router.get('/tpo/profile', authenticateToken, async (req, res) => {
 })
 
 router.post('/tpo/addstudent', authenticateToken, (req, res) => {
-
+    console.log("Add Student Called")
     console.log(req.body);
 
     var user = {
-
-        user_id: req.body.usn,
+        user_id: req.body.usn.toLowerCase(),
         first_name: req.body.first_name,
         middle_name: req.body.middle_name,
         last_name: req.body.last_name,
@@ -54,18 +53,18 @@ router.post('/tpo/addstudent', authenticateToken, (req, res) => {
         branch: req.body.branch,
         tenth_percentage: req.body.tenth_percentage,
         twelfth_percentage: req.body.twelfth_percentage,
-        ug_cgpa: req.body.ug_cgpa
+        ug_cgpa: req.body.ug_cgpa,
+        password: 'abcd1234'
     }
 
-    console.log(user);
+    studentColl.insertOne(user).then(res => { res.status(200).send("Student Added"); }).catch(e => {
+        res.sendStatus(400)
+    });
 
-    res.send("Student Added in Database");
 })
 
 router.post('/tpo/addjob', authenticateToken, (req, res) => {
     console.log(body);
-
-
     var job = {
         company_name: req.body.company_name,
         job_role: req.body.job_role,

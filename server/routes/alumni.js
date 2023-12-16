@@ -1,4 +1,5 @@
 const express = require('express');
+const { alumniColl } = require('../utils/dbConfig');
 const router = express.Router();
 
 // const { authenticateToken } = require('../utils/auth')
@@ -30,10 +31,11 @@ function authenticateToken(req, res, next) {
 
 router.get('/alumni/profile', authenticateToken, (req, res) => {
 
-    const user = {
-        user_id: req.body.user_id,
-
-    }
+    const user = alumniColl.findOne({
+        'user_id': req.user.user_id
+    }).then().catch((e) => {
+        return res.sendStatus(404);
+    })
 
 
     res.status(200).send("Hello");
