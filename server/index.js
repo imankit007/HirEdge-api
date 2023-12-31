@@ -3,10 +3,12 @@ const cors = require('cors')
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 var cookieParser = require('cookie-parser');
+const morgan = require('morgan');
 dotenv.config();
 const { studentColl, tpoColl, hodColl, alumniColl, companyColl, con } = require('./utils/dbConfig');
 
 var app = express();
+app.use(morgan("tiny"))
 app.use(cors({
     origin: 'http://localhost:3000',
     credentials: true
@@ -23,16 +25,21 @@ const studentRouter = require('./routes/student');
 //router for tpo module
 const tpoRouter = require('./routes/tpo');
 
+//router for alumni module
+const alumniRouter = require('./routes/alumni');
+
+const hodRouter = require('./routes/hod');
 
 app.use(studentRouter);
 app.use(tpoRouter);
+app.use(alumniRouter);
+app.use(hodRouter)
+
 app.get('/', (req, res) => {
     res.send({ "message": "API is working" })
 })
 
 app.post('/login', async (req, res) => {
-
-    console.log('Login Requested')
 
     req.body.user_id = req.body.user_id.toString().toLowerCase();
 
@@ -75,11 +82,12 @@ app.post('/login', async (req, res) => {
                 })
 
 
-                res.cookie('refresh_token', `${refresh_token}`, {
+                res.cookie('refresh_token', refresh_token, {
                     httpOnly: true,
                     maxAge: 24 * 60 * 60 * 1000,
                     sameSite: 'none',
                     secure: true,
+                    path: '/'
                 })
                 res.status(200).json({
                     user_id: req.body.user_id,
@@ -96,13 +104,9 @@ app.post('/login', async (req, res) => {
 })
 
 app.get('/refresh', async (req, res) => {
-
-    console.log('Refresh Token Requested');
-
     const cookies = req.cookies;
-
     let refreshToken = cookies.refresh_token;
-    if (refreshToken == "undefined") {
+    if (refreshToken == "undefined" || !refreshToken) {
         res.sendStatus(401);
     } else {
         con.execute('SELECT * from `auth` WHERE `refresh_token` = ?', [refreshToken], function (err, results) {
@@ -135,9 +139,6 @@ app.get('/refresh', async (req, res) => {
 })
 
 app.get('/logout', async (req, res) => {
-
-    console.log('Logout Requested');
-
     const cookies = req.cookies;
     const refreshToken = cookies.refresh_token;
 

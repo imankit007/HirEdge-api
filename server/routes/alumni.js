@@ -1,7 +1,7 @@
 const express = require('express');
 const { alumniColl } = require('../utils/dbConfig');
 const router = express.Router();
-
+const jwt = require('jsonwebtoken');
 // const { authenticateToken } = require('../utils/auth')
 
 
@@ -31,14 +31,17 @@ function authenticateToken(req, res, next) {
 
 router.get('/alumni/profile', authenticateToken, (req, res) => {
 
-    const user = alumniColl.findOne({
+    alumniColl.findOne({
         'user_id': req.user.user_id
-    }).then().catch((e) => {
+    }, {
+        $projection: {
+
+        }
+    }).then((user) => {
+        res.status(200).send(user);
+    }).catch((e) => {
         return res.sendStatus(404);
     })
-
-
-    res.status(200).send("Hello");
 })
 
 
