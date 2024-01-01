@@ -30,10 +30,16 @@ const alumniRouter = require('./routes/alumni');
 
 const hodRouter = require('./routes/hod');
 
+const test = require('./routes/test');
+
 app.use(studentRouter);
 app.use(tpoRouter);
 app.use(alumniRouter);
 app.use(hodRouter)
+
+//for development purposes 
+
+app.use(test);
 
 app.get('/', (req, res) => {
     res.send({ "message": "API is working" })
@@ -148,8 +154,24 @@ app.get('/logout', async (req, res) => {
     res.clearCookie('refresh_token').status(200).send("Logout Successful")
 })
 
+const { getOngoingDrives } = require('./utils/dataFetching')
+
+app.get('/getdrives', async (req, res) => {
+
+    try {
+        const result = await getOngoingDrives();
+
+        res.status(200).json(result)
+    } catch (e) {
+        console.log(e)
+    }
+})
+
+
+
 app.listen(5000, async () => {
     console.log("Listening at PORT 5000");
 })
+
 
 
