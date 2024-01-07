@@ -4,6 +4,7 @@ const { studentColl, tpoColl, companyDBColl, companyColl, alumniColl } = require
 const { getPrevYearOffers } = require('../common/index');
 const jwt = require('jsonwebtoken');
 const { ObjectId } = require('mongodb');
+const { getDriveData, getManageDriveData, getStudentDataForDrive, getRoundData } = require('../utils/dataFetching');
 // const { authenticateToken } = require('../utils/auth')
 
 
@@ -197,7 +198,72 @@ router.get('/tpo/home', authenticateToken, async (req, res) => {
     const data = await getPrevYearOffers();
     res.status(200).json(data);
 
+});
 
+
+router.get('/tpo/drive', authenticateToken, async (req, res) => {
+
+    try {
+        const id = req.query.id;
+        if (!id) {
+            res.status(404).json({ message: 'Bad Request' })
+        }
+
+        const result = await getDriveData(id);
+
+
+        res.status(200).json(result);
+    }
+    catch (error) {
+        console.log(error);
+    }
+})
+
+router.get('/tpo/getmanagedrive', authenticateToken, async (req, res) => {
+    try {
+
+        const id = req.query.id;
+        if (!id)
+            res.status(404).json({ "message": "Bad Request" });
+
+        const result = await getManageDriveData(id);
+
+        res.status(200).json(result)
+
+    } catch (e) {
+        console.log(e);
+    }
+})
+
+router.get('/tpo/getstudentdatafordrive', authenticateToken, async (req, res) => {
+    try {
+        const id = req.query.id;
+        if (!id)
+            res.status(404).json({ "message": "Bad Request" });
+
+        const data = await getStudentDataForDrive(id);
+
+        res.status(200).json(data);
+    } catch (e) {
+        console.log(e);
+    }
+});
+
+router.get('/tpo/getrounds', authenticateToken, async (req, res) => {
+
+    try {
+
+        const id = req.query.id;
+        if (!id)
+            res.status(404).json({ "message": "Bad Request" });
+
+        const data = await getRoundData(id);
+
+        res.status(200).json(data);
+
+    } catch (error) {
+        console.log(error)
+    }
 })
 
 module.exports = router;

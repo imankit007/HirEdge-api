@@ -8,7 +8,7 @@ dotenv.config();
 const { studentColl, tpoColl, hodColl, alumniColl, companyColl, con } = require('./utils/dbConfig');
 
 var app = express();
-app.use(morgan("tiny"))
+app.use(morgan("dev"))
 app.use(cors({
     origin: 'http://localhost:3000',
     credentials: true

@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken')
 const { studentColl, companyColl, companyDBColl } = require('../utils/dbConfig');
 const { UUID, ObjectId } = require('mongodb');
 const morgan = require('morgan');
+const { getDriveData } = require('../utils/dataFetching');
 
 
 function authenticateToken(req, res, next) {
@@ -72,8 +73,6 @@ router.post('/student/addquery', (req, res) => {
 router.get('/student/getdrives', authenticateToken, async (req, res) => {
 
     try {
-
-
         var result = await companyColl.aggregate([
             {
                 $lookup: {
@@ -110,36 +109,10 @@ router.get('/student/getdrives', authenticateToken, async (req, res) => {
 
 router.get('/student/drive', authenticateToken, async (req, res) => {
 
-    const query = req.query.id;
+    const id = req.query.id;
 
     try {
-        let result = await companyColl.aggregate([
-            {
-                $match: {
-                    '_id': new ObjectId(query)
-                }
-            }, {
-                $lookup: {
-                    from: 'CompanyDB',
-                    localField: 'company_id',
-                    foreignField: '_id',
-                    as: 'companyDetails',
-                }
-            },
-            {
-                $unwind: {
-                    path: '$companyDetails'
-                }
-
-            }, {
-                $project: {
-                    'companyDetails.queries': 0,
-                    'companyDetails.interview_experiences': 0,
-                    'companyDetails.placements': 0,
-                }
-            },
-        ]).toArray();
-        result = result[0];
+        let result = await getDriveData(id);
 
         if (result.registered.includes(req.user.user_id)) {
             result['applied'] = true;
