@@ -19,7 +19,6 @@ async function getTotalOffersInYear(year) {
                 'no_of_offers': {
                     $size: "$placements.placed_students"
                 },
-                'company_name': 1,
                 'placements.year': 1,
             }
         },
@@ -39,11 +38,42 @@ async function getTotalOffersInYear(year) {
     }
 }
 
+async function getPrevYearOfferCount() {
+    try {
 
-async function getOffersByYear(year, pageNumber, pageSize) {
+        const year = new Date().getFullYear();
+        const prevYear = year - 2;
+
+        const data = await getTotalOffersInYear(prevYear);
+
+        return data;
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function getCurrYearOfferCount() {
+    try {
+        const currYear = new Date().getFullYear() - 1;
+
+        const data = await getTotalOffersInYear(currYear);
+
+        return data;
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+
+async function getOffersByYear(year, pageNumber = 1, pageSize = 10, sort = 'asc') {
 
     try {
-        const result = await companyDBColl.aggregate([
+        const result = await companyDBColl.aggregate([{
+            $project: {
+                placements: 1,
+                company_name: 1
+            }
+        },
             {
                 $match: {
                     "placements.year": year
@@ -64,10 +94,12 @@ async function getOffersByYear(year, pageNumber, pageSize) {
                 }
             }, {
                 $sort: {
-                    'no_of_offers': 1
+                    'no_of_offers': sort == 'desc' ? -1 : 1
                 }
             }, {
-                $limit: 10
+                $skip: ((pageNumber - 1) * pageSize)
+            }, {
+                $limit: pageSize
             }
         ]).toArray();
 
@@ -79,7 +111,7 @@ async function getOffersByYear(year, pageNumber, pageSize) {
 }
 
 
-async function getOngoingDrives() {
+async function getOngoingDrives(page = 1, limit = 10) {
 
     try {
         var result = await companyColl.aggregate([
@@ -109,8 +141,11 @@ async function getOngoingDrives() {
                     'job_ctc': 1,
                     'company_name': '$companyDetails.company_name',
                     'company_website': '$companyDetails.company_website'
-
                 }
+            }, {
+                $skip: (page - 1) * limit
+            }, {
+                $limit: limit
             }
         ]).toArray();
 
@@ -256,6 +291,121 @@ async function getRoundData(id) {
     } catch (error) {
         console.log(error);
     }
+};
+
+
+async function getCompanyDetails(id) {
+    try {
+
+        const data = await companyDBColl.findOne({
+            "_id": new ObjectId(id)
+        }, {
+            projection: {
+                'interview_experiences': 0,
+            }
+        })
+
+        return data;
+
+    } catch (error) {
+        console.log(error)
+    }
 }
 
-module.exports = { getTotalOffersInYear, getOffersByYear, getOngoingDrives, getDriveData, getManageDriveData, getStudentDataForDrive, getRoundData }
+
+async function getInterviewExperiencesOfCompany(id, limit = 10, page = 1) {
+
+    try {
+
+        const toSkip = (page - 1) * limit;
+
+        const data = await companyDBColl.aggregate([
+            {
+                $match: {
+                    _id: new ObjectId(id)
+                }
+            }, {
+                $project: {
+                    "total_count": {
+                        $size: "$interview_experiences"
+                    },
+                    "interview_experiences": {
+                        $slice: ["$interview_experiences", toSkip, limit]
+                    }
+
+                }
+            }, {
+                $lookup: {
+                    from: "Experiences",
+                    localField: "interview_experiences",
+                    foreignField: "_id",
+                    as: "interview_experiences"
+                }
+            },
+        ]).toArray();
+
+        return data;
+    } catch (error) {
+        console.error(error);
+    }
+
+}
+
+async function getCompanies(s = '', page = 1, limit = 25) {
+
+    try {
+        const companies = await companyDBColl.aggregate([{
+            $match: {
+                "company_name": {
+                    $regex: s,
+                    $options: 'i'
+                }
+            }
+        },
+        {
+            $facet: {
+                metadata: [{ $count: 'totalCount' }],
+                data: [{
+                    $sort:
+                    {
+                        "company_name": 1
+                    }
+
+                }, {
+                    $skip: (page - 1) * limit
+                }, {
+                    $limit: limit
+                }, {
+                    $project: {
+                        "company_name": 1,
+                        "company_website": 1,
+                    }
+                }]
+            }
+        }
+        ]).toArray()
+
+        return {
+            companies: {
+                metadata: {
+                    totalCount: companies[0].metadata[0].totalCount,
+                    pageCount: Math.ceil(companies[0].metadata[0].totalCount / limit)
+                },
+                data: companies[0].data
+
+            }
+        };
+
+    } catch (error) {
+        console.error(error);
+    }
+
+}
+
+
+module.exports = {
+    getTotalOffersInYear, getOffersByYear,
+    getOngoingDrives, getDriveData, getManageDriveData,
+    getStudentDataForDrive, getRoundData, getCompanyDetails,
+    getInterviewExperiencesOfCompany, getPrevYearOfferCount, getCurrYearOfferCount, getCompanies
+}

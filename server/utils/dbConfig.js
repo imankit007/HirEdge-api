@@ -39,7 +39,6 @@ const tpoColl = DB.collection("TPO");
 const alumniColl = DB.collection("Alumni");
 const companyColl = DB.collection("Company");
 const companyDBColl = DB.collection("CompanyDB");
-const queriesColl = DB.collection("Queries");
-const answersColl = DB.collection("Answers");
+const experienceColl = DB.collection("Experiences");
 
-module.exports = { studentColl, hodColl, tpoColl, alumniColl, companyColl, companyDBColl, con, queriesColl, answersColl }
+module.exports = { studentColl, hodColl, tpoColl, alumniColl, companyColl, companyDBColl, con, experienceColl }

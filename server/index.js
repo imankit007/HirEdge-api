@@ -4,9 +4,9 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 var cookieParser = require('cookie-parser');
 const morgan = require('morgan');
+const admin = require('firebase-admin')
 dotenv.config();
 const { studentColl, tpoColl, hodColl, alumniColl, companyColl, con } = require('./utils/dbConfig');
-
 var app = express();
 app.use(morgan("dev"))
 app.use(cors({
@@ -17,13 +17,22 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+
+const serviceAccount = require('../hiredge-5cd96-0f8b736e7890.json');
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+})
+
+
+
 const { generateAuthToken, authenticateToken } = require('./utils/auth')
 
 //router for student module
-const studentRouter = require('./routes/student');
+const studentRouter = require('./routes/student.router');
 
 //router for tpo module
-const tpoRouter = require('./routes/tpo');
+const tpoRouter = require('./routes/tpo.router');
 
 //router for alumni module
 const alumniRouter = require('./routes/alumni');
@@ -32,14 +41,20 @@ const hodRouter = require('./routes/hod');
 
 const test = require('./routes/test');
 
-app.use(studentRouter);
-app.use(tpoRouter);
+const commonRouter = require('./routes/common');
+
+app.use('/student', studentRouter);
+app.use('/tpo', tpoRouter);
 app.use(alumniRouter);
-app.use(hodRouter)
+app.use(hodRouter);
+app.use('/common', commonRouter);
 
 //for development purposes 
 
 app.use(test);
+//configuring Swagger UI
+
+
 
 app.get('/', (req, res) => {
     res.send({ "message": "API is working" })
@@ -47,29 +62,48 @@ app.get('/', (req, res) => {
 
 app.post('/login', async (req, res) => {
 
-    req.body.user_id = req.body.user_id.toString().toLowerCase();
+    req.body.user_id = req.body.user_id.toString().toLowerCase().trim();
+
+
+    console.log(req.body);
 
     let user = null;
     try {
         if (req.body.role == 'student') {
             user = await studentColl.findOne({
-                'user_id': req.body.user_id
+                'user_id': req.body.user_id,
+            }, {
+                projection: {
+                    password: 1
+                }
             })
-        }
+        } else
         if (req.body.role == 'tpo') {
             user = await tpoColl.findOne({
                 'user_id': req.body.user_id
+            }, {
+                projection: {
+                    password: 1
+                }
             })
-        }
+        } else
         if (req.body.role == 'hod') {
             user = await hodColl.findOne({
                 'user_id': req.body.user_id
+            }, {
+                projection: {
+                    password: 1
+                }
             })
-        }
+        } else
 
         if (req.body.role == 'alumni') {
             user = await alumniColl.findOne({
                 'user_id': req.body.user_id
+            }, {
+                projection: {
+                    password: 1
+                }
             })
         }
         if (user == null) {
@@ -153,20 +187,6 @@ app.get('/logout', async (req, res) => {
     })
     res.clearCookie('refresh_token').status(200).send("Logout Successful")
 })
-
-const { getOngoingDrives } = require('./utils/dataFetching')
-
-app.get('/getdrives', async (req, res) => {
-
-    try {
-        const result = await getOngoingDrives();
-
-        res.status(200).json(result)
-    } catch (e) {
-        console.log(e)
-    }
-})
-
 
 
 app.listen(5000, async () => {

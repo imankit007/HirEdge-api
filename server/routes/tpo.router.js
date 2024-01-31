@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const { studentColl, tpoColl, companyDBColl, companyColl, alumniColl } = require('../utils/dbConfig');
@@ -5,7 +6,8 @@ const { getPrevYearOffers } = require('../common/index');
 const jwt = require('jsonwebtoken');
 const { ObjectId } = require('mongodb');
 const { getDriveData, getManageDriveData, getStudentDataForDrive, getRoundData } = require('../utils/dataFetching');
-// const { authenticateToken } = require('../utils/auth')
+
+const { getDrives, getProfile } = require('../utils/tpo.utils');
 
 
 function authenticateToken(req, res, next) {
@@ -21,29 +23,27 @@ function authenticateToken(req, res, next) {
             return res.status(403).send("Unauthorized Access");
         }
         req.user = user
-        next()  
+        next()
     })
 }
 
 
-router.get('/tpo/profile', authenticateToken, async (req, res) => {
+router.get('/profile', authenticateToken, async (req, res) => {
 
+    try {
 
-    var user = await tpoColl.findOne({
-        'user_id': req.user.user_id.toString().toLowerCase()
-    }, {
-        projection: { 'password': 0, '_id': 0 },
+        const user_id = req.user.user_id;
 
-    });
+        const profile = await getProfile(user_id);
 
-    res.status(200).send(user);
+        res.status(200).json(profile);
 
+    } catch (error) {
+        res.sendStatus(400);
+    }
 })
 
-router.post('/tpo/addstudent', authenticateToken, (req, res) => {
-    console.log("Add Student Called")
-    console.log(req.body);
-
+router.post('/students', authenticateToken, (req, res) => {
     var user = {
         user_id: req.body.usn.toLowerCase(),
         first_name: req.body.first_name,
@@ -65,30 +65,25 @@ router.post('/tpo/addstudent', authenticateToken, (req, res) => {
 
 })
 
-router.post('/tpo/adddrive', authenticateToken, async (req, res) => {
-    // console.log(req.body);
+router.post('/drive', authenticateToken, async (req, res) => {
     var job = {
         company_id: new ObjectId(req.body.company_id),
         job_title: req.body.job_title,
+        job_description: req.body.job_description,
         tenth_cutoff: req.body.tenth_cutoff,
         twelfth_cutoff: req.body.twelfth_cutoff,
         ug_cutoff: req.body.ug_cutoff,
-        job_location: req.body.job_location,
+        job_locations: req.body.job_locations,
         job_ctc: req.body.job_ctc,
         branch: req.body.branch,
-
+        rounds: req.body.rounds,
     };
 
-    // var result = await companyColl.insertOne(job);
 
-
-    // res.status(200).send(result);
-
-    res.json(job);
-
+    res.status(200).json({ message: "Drive Posted Success" });
 })
 
-router.get('/tpo/getcompanylist', authenticateToken, async (req, res) => {
+router.get('/companies', authenticateToken, async (req, res) => {
 
     const search = req.query.search;
 
@@ -103,7 +98,7 @@ router.get('/tpo/getcompanylist', authenticateToken, async (req, res) => {
 
 })
 
-router.post('/tpo/addcompany', authenticateToken, async (req, res) => {
+router.post('/companies', authenticateToken, async (req, res) => {
 
     var company = {
         company_name: req.body.company_name,
@@ -122,7 +117,7 @@ router.post('/tpo/addcompany', authenticateToken, async (req, res) => {
 
 })
 
-router.post('/tpo/addalumni', authenticateToken, async (req, res) => {
+router.post('/alumnis', authenticateToken, async (req, res) => {
 
     try {
 
@@ -145,45 +140,18 @@ router.post('/tpo/addalumni', authenticateToken, async (req, res) => {
 })
 
 
-router.get('/tpo/getdrives', authenticateToken, async (req, res) => {
-
-
-    const name = req.query.name || '';
+router.get('/drives', authenticateToken, async (req, res) => {
+    const s = String(req.query.s);
+    const page = Number(req.query.page);
+    const limit = Number(req.query.limit);
 
     try {
-        var result = await companyColl.aggregate([
-            {
-                $lookup: {
-                    from: 'CompanyDB',
-                    localField: 'company_id',
-                    foreignField: '_id',
-                    as: 'companyDetails',
-                }
-            }, {
-                $match: {
-                    "companyDetails.company_name": {
-                        $regex: name,
-                        $options: 'i'
-                    }
-                }
-            }, {
-                $unwind: {
-                    path: '$companyDetails'
-                }
-            }, {
-                $project: {
-                    '_id': 1,
-                    'company_id': 1,
-                    'job_title': 1,
-                    'job_ctc': 1,
-                    'company_name': '$companyDetails.company_name',
-                    'company_website': '$companyDetails.company_website'
 
-                }
-            }
-        ]).toArray();
-
-        res.status(200).json(result);
+        const drives = await getDrives(s, page, limit);
+        if (drives)
+            res.status(200).json(drives);
+        else
+            res.status(200).json({ count: 0, drives: [] })
 
     } catch (e) {
         console.log(e);
@@ -193,49 +161,43 @@ router.get('/tpo/getdrives', authenticateToken, async (req, res) => {
 })
 
 
-router.get('/tpo/home', authenticateToken, async (req, res) => {
-
-    const data = await getPrevYearOffers();
-    res.status(200).json(data);
-
-});
-
-
-router.get('/tpo/drive', authenticateToken, async (req, res) => {
+router.get('/drive/:drive_id', authenticateToken, async (req, res) => {
 
     try {
-        const id = req.query.id;
-        if (!id) {
+        const drive_id = req.params.drive_id;
+        if (!drive_id) {
             res.status(404).json({ message: 'Bad Request' })
+        } else {
+            const result = await getDriveData(drive_id);
+            res.status(200).json(result);
         }
-
-        const result = await getDriveData(id);
-
-
-        res.status(200).json(result);
     }
     catch (error) {
         console.log(error);
     }
 })
 
-router.get('/tpo/getmanagedrive', authenticateToken, async (req, res) => {
+router.put('/drive/:drive_id/', authenticateToken, async (req, res) => {
     try {
 
         const id = req.query.id;
         if (!id)
             res.status(404).json({ "message": "Bad Request" });
+        else {
 
-        const result = await getManageDriveData(id);
+            const result = await getManageDriveData(id);
 
-        res.status(200).json(result)
+            res.status(200).json(result)
 
-    } catch (e) {
-        console.log(e);
+        }
+
+    } catch (err) {
+        console.log(err);
+        res.sendStatus(400);
     }
 })
 
-router.get('/tpo/getstudentdatafordrive', authenticateToken, async (req, res) => {
+router.get('/drive/:drive_id/students', authenticateToken, async (req, res) => {
     try {
         const id = req.query.id;
         if (!id)
@@ -246,14 +208,15 @@ router.get('/tpo/getstudentdatafordrive', authenticateToken, async (req, res) =>
         res.status(200).json(data);
     } catch (e) {
         console.log(e);
+        res.sendStatus(400);
     }
 });
 
-router.get('/tpo/getrounds', authenticateToken, async (req, res) => {
+router.get('/drive/:drive_id/rounds', authenticateToken, async (req, res) => {
 
     try {
 
-        const id = req.query.id;
+        const id = req.params.drive_id;
         if (!id)
             res.status(404).json({ "message": "Bad Request" });
 
@@ -263,7 +226,11 @@ router.get('/tpo/getrounds', authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.log(error)
+        res.sendStatus(400);
     }
 })
+
+
+
 
 module.exports = router;
