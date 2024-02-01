@@ -10,8 +10,6 @@ const {
 const { UUID, ObjectId } = require("mongodb");
 const {
     getDriveData,
-    getCurrYearOfferCount,
-    getPrevYearOfferCount,
     getCompanies,
     getCompanyDetails,
 } = require("../utils/dataFetching");
@@ -83,8 +81,8 @@ router.get("/drive/:drive_id", authenticateToken, async (req, res) => {
 router.get("/companies", authenticateToken, async (req, res) => {
     try {
         const s = String(req.query.s);
-        const page = Number(req.query.page);
-        const limit = Number(req.query.limit);
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 25;
         var data = await getCompanies(s, page, limit);
         res.status(200).json(data);
     } catch (error) {
@@ -104,7 +102,7 @@ router.get("/company/:company_id", authenticateToken, async (req, res) => {
     }
 });
 
-router.get("/drive/:drive_id/apply", authenticateToken, async (req, res) => {
+router.post("/drive/:drive_id/apply", authenticateToken, async (req, res) => {
     try {
         const drive_id = req.params.drive_id;
         const student_id = req.user.user_id;
@@ -127,5 +125,22 @@ router.get("/drive/:drive_id/apply", authenticateToken, async (req, res) => {
         res.sendStatus(400);
     }
 });
+
+router.post('/company/:company_id/experiences', authenticateToken, async (req, res) => {
+
+    try {
+
+        const company_id = req.params.company_id;
+
+        console.log(company_id);
+        console.log(req.body);
+
+        res.sendStatus(200);
+
+    } catch (error) {
+        console.log(error);
+        res.sendStatus(400);
+    }
+})
 
 module.exports = router;
