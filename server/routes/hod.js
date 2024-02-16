@@ -6,10 +6,6 @@ const router = express.Router();
 
 function authenticateToken(req, res, next) {
 
-    // console.log("auth ")
-
-    // console.log(req.headers);
-
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
 

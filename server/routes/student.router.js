@@ -9,14 +9,15 @@ const {
 } = require("../utils/dbConfig");
 const { UUID, ObjectId } = require("mongodb");
 const {
-    getDriveData,
+
     getCompanies,
     getCompanyDetails,
+    getInterviewExperiencesOfCompany,
 } = require("../utils/dataFetching");
 const {
     getProfile,
     getDrives,
-    getQualification,
+    getQualification, getDriveData,
 } = require("../utils/student.utils");
 
 function authenticateToken(req, res, next) {
@@ -44,6 +45,27 @@ router.get("/profile", authenticateToken, async (req, res) => {
     }
 });
 
+router.put('/profile', authenticateToken, async (req, res) => {
+
+    try {
+
+        const updates = {};
+        for (let [key, value] of Object.entries(req.body)) {
+            updates[key] = value;
+        }
+        await studentColl.findOneAndUpdate({
+            'user_id': req.user.user_id,
+        }, {
+            $set: updates
+        })
+        res.sendStatus(200);
+    } catch (error) {
+        console.log(error);
+        res.sendStatus(400);
+    }
+
+})
+
 router.get("/drives", authenticateToken, async (req, res) => {
     try {
         const s = req.query.s;
@@ -61,16 +83,9 @@ router.get("/drives", authenticateToken, async (req, res) => {
 });
 router.get("/drive/:drive_id", authenticateToken, async (req, res) => {
     const id = req.params.drive_id;
-
+    const studentData = await getQualification(req.user.user_id);
     try {
-        let result = await getDriveData(id);
-
-        if (result.registered.includes(req.user.user_id)) {
-            result["applied"] = true;
-        } else {
-            result["applied"] = false;
-        }
-        delete result["registered"];
+        let result = await getDriveData(id, req.user.user_id, studentData);
         res.status(200).json(result);
     } catch (e) {
         console.log(e);
@@ -80,9 +95,10 @@ router.get("/drive/:drive_id", authenticateToken, async (req, res) => {
 
 router.get("/companies", authenticateToken, async (req, res) => {
     try {
-        const s = String(req.query.s);
+        const s = String(req.query.s) || "";
         const page = Number(req.query.page) || 1;
         const limit = Number(req.query.limit) || 25;
+
         var data = await getCompanies(s, page, limit);
         res.status(200).json(data);
     } catch (error) {
@@ -113,34 +129,61 @@ router.post("/drive/:drive_id/apply", authenticateToken, async (req, res) => {
             },
             {
                 $addToSet: {
-                    registered: student_id,
+                    students: {
+                        "usn": student_id,
+                        "status": "registered"
+                    }
                 },
             }
         );
 
         res.sendStatus(200);
-    }
-    catch (err) {
+    } catch (err) {
         console.log(err);
         res.sendStatus(400);
     }
 });
 
-router.post('/company/:company_id/experiences', authenticateToken, async (req, res) => {
-
-    try {
-
+router.post(
+    "/company/:company_id/experiences",
+    authenticateToken,
+    async (req, res) => {
+        try {
         const company_id = req.params.company_id;
 
         console.log(company_id);
         console.log(req.body);
 
         res.sendStatus(200);
+        } catch (error) {
+            console.log(error);
+            res.sendStatus(400);
+        }
+    }
+);
 
+router.get(
+    "/company/:company_id/experiences",
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const company_id = req.params.company_id;
+
+            const page = Number(req.query.page);
+            const limit = Number(req.query.limit);
+
+            const data = await getInterviewExperiencesOfCompany(
+                company_id,
+                page,
+                limit
+            );
+            res.status(200).json(data);
     } catch (error) {
         console.log(error);
         res.sendStatus(400);
     }
-})
+    }
+);  
+
 
 module.exports = router;

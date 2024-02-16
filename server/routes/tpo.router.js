@@ -1,13 +1,13 @@
 
 const express = require('express');
 const router = express.Router();
-const { studentColl, tpoColl, companyDBColl, companyColl, alumniColl } = require('../utils/dbConfig');
+const { companyDBColl, companyColl, alumniColl } = require('../utils/dbConfig');
 const { getPrevYearOffers } = require('../common/index');
 const jwt = require('jsonwebtoken');
 const { ObjectId } = require('mongodb');
 const { getDriveData, getManageDriveData, getStudentDataForDrive, getRoundData } = require('../utils/dataFetching');
 
-const { getDrives, getProfile } = require('../utils/tpo.utils');
+const { getDrives, getProfile, addStudent } = require('../utils/tpo.utils');
 
 
 function authenticateToken(req, res, next) {
@@ -43,30 +43,28 @@ router.get('/profile', authenticateToken, async (req, res) => {
     }
 })
 
-router.post('/students', authenticateToken, (req, res) => {
-    var user = {
-        user_id: req.body.usn.toLowerCase(),
-        first_name: req.body.first_name,
-        middle_name: req.body.middle_name,
-        last_name: req.body.last_name,
-        dob: req.body.dob,
-        mobile: req.body.mobile,
-        email: req.body.email,
-        branch: req.body.branch,
-        tenth_percentage: req.body.tenth_percentage,
-        twelfth_percentage: req.body.twelfth_percentage,
-        ug_cgpa: req.body.ug_cgpa,
-        password: 'abcd1234'
-    }
+router.post('/students', authenticateToken, async (req, res) => {
 
-    studentColl.insertOne(user).then(res => { res.status(200).send("Student Added"); }).catch(e => {
-        res.sendStatus(400)
-    });
+    try {
+
+
+        await addStudent(req.body);
+
+        res.sendStatus(200)
+
+    } catch (error) {
+        console.log(error);
+        if (error.code == 11000)
+            res.status(400).json({ message: 'USN already exists' });
+        else
+            res.sendStatus(400);
+    }
 
 })
 
-router.post('/drive', authenticateToken, async (req, res) => {
-    var job = {
+router.post('/drives', authenticateToken, async (req, res) => {
+    try {
+        var job = {
         company_id: new ObjectId(req.body.company_id),
         job_title: req.body.job_title,
         job_description: req.body.job_description,
@@ -77,10 +75,19 @@ router.post('/drive', authenticateToken, async (req, res) => {
         job_ctc: req.body.job_ctc,
         branch: req.body.branch,
         rounds: req.body.rounds,
+            students: [],
+            company_name: req.body.company_name
     };
 
+        await companyColl.insertOne(job, {});
 
-    res.status(200).json({ message: "Drive Posted Success" });
+        res.status(200).json({ message: "Drive Posted Success" });
+    }
+    catch (err) {
+
+        console.log(err);
+        res.sendStatus(400);
+    }
 })
 
 router.get('/companies', authenticateToken, async (req, res) => {
@@ -107,7 +114,6 @@ router.post('/companies', authenticateToken, async (req, res) => {
         queries: []
     }
     try {
-        const id = await companyDBColl.insertOne(company)
         res.status(200).json();
     }
     catch (e) {
@@ -141,17 +147,15 @@ router.post('/alumnis', authenticateToken, async (req, res) => {
 
 
 router.get('/drives', authenticateToken, async (req, res) => {
-    const s = String(req.query.s);
-    const page = Number(req.query.page);
-    const limit = Number(req.query.limit);
+    const s = String(req.query.s) || '';
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
 
     try {
 
         const drives = await getDrives(s, page, limit);
-        if (drives)
-            res.status(200).json(drives);
-        else
-            res.status(200).json({ count: 0, drives: [] })
+
+        res.status(200).json(drives);
 
     } catch (e) {
         console.log(e);

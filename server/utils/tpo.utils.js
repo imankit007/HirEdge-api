@@ -1,62 +1,55 @@
 const { ObjectId } = require("mongodb");
-const { companyDBColl, companyColl, tpoColl } = require("./dbConfig");
+const { companyDBColl, companyColl, tpoColl, studentColl } = require("./dbConfig");
 
 
 
-async function getDrives(s = '', page = 1, limit = 10) {
+async function getDrives(s, page, limit) {
 
     try {
         var result = await companyColl.aggregate([
             {
-                $lookup: {
-                    from: 'CompanyDB',
-                    localField: 'company_id',
-                    foreignField: '_id',
-                    as: 'companyDetails',
-                }
-            }, {
-                $match: {
-                    "companyDetails.company_name": {
-                        $regex: s,
-                        $options: 'i'
-                    }
-                }
-            }, {
-                $unwind: {
-                    path: '$companyDetails'
-                }
-            }, {
-                $project: {
-                    '_id': 1,
-                    'company_id': 1,
-                    'job_title': 1,
-                    'job_ctc': 1,
-                    'company_name': '$companyDetails.company_name',
-                    'company_website': '$companyDetails.company_website'
-                }
-            }, {
-                $sort: {
-                    'company_name': 1
-                }
-            }, {
-                $group: { _id: null, count: { $sum: 1 }, drives: { $push: "$$ROOT" } }
-            }, {
-                $project: {
-                    count: 1,
-                    drives: {
-                        $slice: ["$drives", (page - 1) * limit, limit]
-                    },
-                    no_of_pages: {
-                        $ceil: {
-                            $divide: ["$count", limit]
-                        }
 
+                $match: {
+                    company_name: {
+                        $regex: s,
+                        $options: "i"
                     }
+                }
+            }, {
+                $facet: {
+                    metadata: [{ $count: "totalCount" }],
+                    data: [{
+                        $skip: (page - 1) * limit
+                    }, {
+                            $limit: limit
+                        },
+                        {
+                            $project: {
+                                company_name: 1,
+                                company_id: 1,
+                                job_title: 1,
+                                job_ctc: 1,
+                                registered_students: {
+                                    $size: "$students"
+                                },
+                                current_status: 1
+                            }
+                        }
+                    ]
                 }
             }
         ]).toArray();
 
-        return result[0];
+        return {
+            drives: {
+                metadata: {
+                    totalCount: result[0].metadata[0].totalCount,
+                    pageCount: Math.ceil(result[0].metadata[0].totalCount / limit),
+                    page: page
+                },
+                data: result[0].data
+            }
+        };
 
     } catch (e) {
         console.log(e);
@@ -81,4 +74,34 @@ async function getProfile(user_id) {
 }
 
 
-module.exports = { getDrives, getProfile }
+async function addStudent(student) {
+
+    try {
+
+        var student = {
+            user_id: String(student.usn).trim().toLowerCase(),
+            first_name: String(student.first_name).trim(),
+            middle_name: String(student.middle_name).trim(),
+            last_name: String(student.last_name).trim(),
+            dob: student.dob,
+            email: String(student.email).trim(),
+            mobile: String(student.mobile).trim(),
+            gender: student.gender,
+            branch: student.branch,
+            tenth_percentage: parseFloat(student.tenth_percentage),
+            twelfth_percentage: parseFloat(student.twelfth_percentage),
+            ug_cgpa: parseFloat(student.ug_cgpa)
+
+        }
+
+        await studentColl.insertOne(student)
+
+        console.log(student);
+
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+module.exports = { getDrives, getProfile, addStudent }

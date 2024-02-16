@@ -26,7 +26,7 @@ admin.initializeApp({
 
 
 
-const { generateAuthToken, authenticateToken } = require('./utils/auth')
+const { generateAuthToken, authenticateToken } = require('./utils/auth.utils')
 
 //router for student module
 const studentRouter = require('./routes/student.router');
@@ -35,24 +35,19 @@ const studentRouter = require('./routes/student.router');
 const tpoRouter = require('./routes/tpo.router');
 
 //router for alumni module
-const alumniRouter = require('./routes/alumni');
+const alumniRouter = require('./routes/alumni.router');
 
 const hodRouter = require('./routes/hod');
 
-const test = require('./routes/test');
 
-const commonRouter = require('./routes/common');
+
+const commonRouter = require('./routes/common.router');
 
 app.use('/student', studentRouter);
 app.use('/tpo', tpoRouter);
-app.use(alumniRouter);
+app.use('/alumni',alumniRouter);
 app.use(hodRouter);
 app.use('/common', commonRouter);
-
-//for development purposes 
-
-app.use(test);
-//configuring Swagger UI
 
 
 
@@ -62,9 +57,9 @@ app.get('/', (req, res) => {
 
 app.post('/login', async (req, res) => {
 
-    req.body.user_id = req.body.user_id.toString().toLowerCase().trim();
+    console.log(req.body);
 
-
+    req.body.user_id = String(req.body.user_id).toLowerCase().trim();
     console.log(req.body);
 
     let user = null;

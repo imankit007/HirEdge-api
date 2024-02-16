@@ -98,7 +98,8 @@ async function getDrives(s = '', page = 1, limit = 10, qualification) {
             drives: {
                 metadata: {
                     totalCount: drives[0].metadata[0].totalCount,
-                    pageCount: Math.ceil(drives[0].metadata[0].totalCount / limit)
+                    pageCount: Math.ceil(drives[0].metadata[0].totalCount / limit),
+                    page: page
                 },
                 data: drives[0].data
             }
@@ -110,28 +111,31 @@ async function getDrives(s = '', page = 1, limit = 10, qualification) {
 
 }
 
-module.exports = { getProfile, getDrives, getQualification }
-
-
-
-
-/* 
-
-[
+async function getDriveData(id, usn, qualification) {
+    try {
+        const data = await companyColl.aggregate([
             {
-                $unwind: {
-                    path: '$companyDetails'
+                $match: {
+                    '_id': new ObjectId(id)
                 }
             }, {
+                $lookup: {
+                    from: 'CompanyDB',
+                    localField: 'company_id',
+                    foreignField: '_id',
+                    as: 'company_details',
+                }
+            }, {
+                $unwind: "$company_details"
+            },
+            {
                 $project: {
-                    'company_id': 1,
-                    'job_title': 1,
-                    'job_ctc': 1,
-                    'company_name': '$companyDetails.company_name',
-                    'company_website': '$companyDetails.company_website',
-                    'tenth_cutoff': 1,
-                    'twelfth_cutoff': 1,
-                    'ug_cutoff': 1,
+                    'company_details.interview_experiences': 0,
+                    'company_details.placements': 0,
+                }
+            },
+            {
+                $addFields: {
                     'eligible': {
                         $and: [
                             { $lte: ['$tenth_cutoff', qualification.tenth_percentage] }
@@ -139,31 +143,24 @@ module.exports = { getProfile, getDrives, getQualification }
                             { $lte: ['$twelfth_cutoff', qualification.twelfth_percentage] },
                             { $lte: ['$ug_cutoff', qualification.ug_cgpa] }
                         ]
-                    }
-                }
-            }
-            , {
-                $group: {
-                    _id: null,
-                    count: { $sum: 1 },
-                    drives: { $push: "$$ROOT" }
-                }
-            },
-            {
-                $project: {
-                    count: 1,
-                    drives: {
-                        $slice: ["$drives", (page - 1) * limit, limit]
                     },
-                    no_of_pages: {
-                        $ceil: {
-                            $divide: ["$count", limit]
-                        }
-
-                    }
+                    "registered": {
+                        $in: [usn, "$students.usn"]
+                    },
 
                 }
+            }, {
+                $unset: ["students"]
             }
-        ]
+        ]).toArray()
+        return data[0];
+    } catch (error) {
+        console.log(error);
+    }
+}
 
-*/
+module.exports = { getProfile, getDrives, getQualification, getDriveData }
+
+
+
+
