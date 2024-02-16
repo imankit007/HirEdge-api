@@ -18,6 +18,7 @@ const {
     getProfile,
     getDrives,
     getQualification, getDriveData,
+    getParticipatingDrives,
 } = require("../utils/student.utils");
 
 function authenticateToken(req, res, next) {
@@ -81,6 +82,19 @@ router.get("/drives", authenticateToken, async (req, res) => {
         res.sendStatus(400);
     }
 });
+
+router.get('/drives/participated', authenticateToken, async (req, res) => {
+    try {
+
+        const drives = await getParticipatingDrives(req.user.user_id);
+
+
+        res.json(drives);
+    } catch (error) {
+        console.log(error);
+    }
+})
+
 router.get("/drive/:drive_id", authenticateToken, async (req, res) => {
     const id = req.params.drive_id;
     const studentData = await getQualification(req.user.user_id);

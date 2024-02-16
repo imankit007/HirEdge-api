@@ -68,7 +68,8 @@ router.post(
             const inserted = await experienceColl.insertOne({
                 experience: req.body.experience,
                 difficulty: req.body.difficulty,
-                important_topics: req.body.important_topics
+                important_topics: req.body.important_topics,
+                "posted_on": Date.now()
             })
 
             await companyDBColl.updateOne({

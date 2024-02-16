@@ -159,7 +159,43 @@ async function getDriveData(id, usn, qualification) {
     }
 }
 
-module.exports = { getProfile, getDrives, getQualification, getDriveData }
+async function getParticipatingDrives(usn) {
+    try {
+
+        const data = await companyColl.aggregate([
+            {
+                $match: {
+                    'students.usn': usn
+                }
+            }, {
+                $limit: 5
+            }, {
+                $project: {
+                    "company_id": 1,
+                    "company_name": 1,
+                    "job_title": 1,
+                    'current_status': 1,
+                    'status': {
+                        $filter: {
+                            input: '$students',
+                            cond: {
+                                $eq: ['$$this.usn', usn]
+                            }
+                        }
+                    }
+                }
+            }
+        ]).toArray();
+
+        return data;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+}
+
+
+module.exports = { getProfile, getDrives, getQualification, getDriveData, getParticipatingDrives }
 
 
 
