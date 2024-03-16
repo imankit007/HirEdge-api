@@ -177,6 +177,7 @@ async function getDriveData(id) {
             {
                 $project: {
                     'company_details.interview_experiences': 0,
+                    'company_details.placements': 0,
                 }
             }
         ]).toArray()
@@ -440,7 +441,7 @@ async function getCompanies(s, page, limit) {
 }
 
 
-async function getCompanyListOptions(s) {
+async function getCompanyListOptions(s, page) {
 
     try {
 
@@ -452,18 +453,39 @@ async function getCompanyListOptions(s) {
                         $options: "i"
                     },
                 }
-            }, {
-                $limit: 50
-            }, {
-                $project: {
-                    'title': "$company_name",
-                    "id": "$_id",
-                    "_id": 0
+            },
+            {
+                $facet: {
+                    metadata: [
+                        {
+                            $count: 'totalCount'
+                        }
+                    ],
+                    data: [{
+                        $skip: (page - 1) * 50
+                    }, {
+                            $limit: 50
+                        }, {
+                            $project: {
+                                'title': "$company_name",
+                                "id": "$_id",
+                                "_id": 0
+                            }
+                        }]
                 }
             }
         ]).toArray()
 
-        return result;
+        return {
+            companies: {
+                metadata: {
+                    totalCount: result[0].metadata[0].totalCount,
+                    pageCount: Math.ceil(result[0].metadata[0].totalCount / 50),
+                    page: page,
+                },
+                data: result[0].data
+            }
+        };
 
     } catch (error) {
         throw error;

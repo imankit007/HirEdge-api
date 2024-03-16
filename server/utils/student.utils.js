@@ -1,7 +1,7 @@
 const { ObjectId } = require("mongodb");
 const { companyDBColl, companyColl, studentColl } = require("./dbConfig");
 
-
+const moment = require("moment-timezone");
 async function getProfile(user_id) {
 
     try {
@@ -13,9 +13,7 @@ async function getProfile(user_id) {
                 '_id': 0, 'password': 0,
             }
         })
-
         return user;
-
     } catch (error) {
         console.log(error);
     }
@@ -44,6 +42,8 @@ async function getQualification(user_id) {
 
 async function getDrives(s = '', page = 1, limit = 10, qualification) {
     try {
+
+        const current_time = moment().unix();
 
         var drives = await companyColl.aggregate([
             {
@@ -88,6 +88,9 @@ async function getDrives(s = '', page = 1, limit = 10, qualification) {
                                     { $lte: ['$twelfth_cutoff', qualification.twelfth_percentage] },
                                     { $lte: ['$ug_cutoff', qualification.ug_cgpa] }
                                 ]
+                            },
+                            registration_open: {
+                                $gte: ['$registration_end', current_time]
                             }
                         }
                     }]
@@ -161,7 +164,6 @@ async function getDriveData(id, usn, qualification) {
 
 async function getParticipatingDrives(usn) {
     try {
-
         const data = await companyColl.aggregate([
             {
                 $match: {
@@ -186,7 +188,6 @@ async function getParticipatingDrives(usn) {
                 }
             }
         ]).toArray();
-
         return data;
     } catch (error) {
         console.log(error);
@@ -194,9 +195,4 @@ async function getParticipatingDrives(usn) {
     }
 }
 
-
 module.exports = { getProfile, getDrives, getQualification, getDriveData, getParticipatingDrives }
-
-
-
-

@@ -109,8 +109,9 @@ router.get('/options/companies', async (req, res)=>{
     try {
         
         const s = String(req.query.s) || '';
+        const page = Number(req.query.page) || 1;
 
-        const data = await getCompanyListOptions(s);
+        const data = await getCompanyListOptions(s, page);
 
         res.status(200).json(data);
 

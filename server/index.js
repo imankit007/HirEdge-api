@@ -25,7 +25,6 @@ admin.initializeApp({
 })
 
 
-
 const { generateAuthToken, authenticateToken } = require('./utils/auth.utils')
 
 //router for student module
@@ -38,9 +37,6 @@ const tpoRouter = require('./routes/tpo.router');
 const alumniRouter = require('./routes/alumni.router');
 
 const hodRouter = require('./routes/hod');
-
-
-
 const commonRouter = require('./routes/common.router');
 
 app.use('/student', studentRouter);
@@ -55,13 +51,18 @@ app.get('/', (req, res) => {
     res.send({ "message": "API is working" })
 })
 
+
+function JSDatetoSQLDateTime(seconds) {
+    let date = new Date();
+    date.setSeconds(seconds);
+    return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
 app.post('/login', async (req, res) => {
 
     console.log(req.body);
 
     req.body.user_id = String(req.body.user_id).toLowerCase().trim();
-    console.log(req.body);
-
     let user = null;
     try {
         if (req.body.role == 'student') {
@@ -107,11 +108,13 @@ app.post('/login', async (req, res) => {
             })
         } else
             if (req.body.password == user.password) {
-                const access_token = generateAuthToken({ user_id: req.body.user_id, role: req.body.role }, '1800s')
-                const refresh_token = generateAuthToken({ user_id: req.body.user_id, role: req.body.role }, `${7 * 24 * 60 * 60}s`)
+                const access_token = generateAuthToken({ user_id: req.body.user_id, role: req.body.role }, '1800s');
+                const refresh_token = generateAuthToken({ user_id: req.body.user_id, role: req.body.role }, `${7 * 24 * 60 * 60}s`);
 
-                con.execute('INSERT INTO auth (refresh_token, user_id, role )VALUES (?,?,?)', [
-                    refresh_token, req.body.user_id, req.body.role
+                const expirtAt = JSDatetoSQLDateTime(7 * 24 * 60 * 60)
+
+                con.execute('INSERT INTO auth (refresh_token, user_id, role, expiryAt )VALUES (?,?,?,?)', [
+                    refresh_token, req.body.user_id, req.body.role, expirtAt
                 ], function (err, results) {
                     console.log(err);
                 })
@@ -167,10 +170,8 @@ app.get('/refresh', async (req, res) => {
                     })
                 }
             )
-
         })
     }
-
 })
 
 app.get('/logout', async (req, res) => {
@@ -181,6 +182,12 @@ app.get('/logout', async (req, res) => {
         if (err) throw err;
     })
     res.clearCookie('refresh_token').status(200).send("Logout Successful")
+})
+
+app.get("/", function (req, res) {
+    res.status(200).json({
+        message: "API is Working"
+    })
 })
 
 

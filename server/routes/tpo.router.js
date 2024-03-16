@@ -1,23 +1,24 @@
 
 const express = require('express');
 const router = express.Router();
-const { companyDBColl, companyColl, alumniColl } = require('../utils/dbConfig');
-const { getPrevYearOffers } = require('../common/index');
+const { companyDBColl, alumniColl } = require('../utils/dbConfig');
 const jwt = require('jsonwebtoken');
 const { ObjectId } = require('mongodb');
 const { getDriveData, getManageDriveData, getStudentDataForDrive, getRoundData } = require('../utils/dataFetching');
 
 const { getDrives, getProfile, addStudent } = require('../utils/tpo.utils');
 
+const upload = require('./../middlewares/multer.config');
+
+const moment = require('moment-timezone');
+const multer = require('multer');
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1]
-
     if (token == null) return res.sendStatus(401)
-
     jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
-
+        console.log(err)
         if (err) return res.sendStatus(403);
         if (user.role != 'tpo') {
             return res.status(403).send("Unauthorized Access");
@@ -26,7 +27,6 @@ function authenticateToken(req, res, next) {
         next()
     })
 }
-
 
 router.get('/profile', authenticateToken, async (req, res) => {
 
@@ -47,7 +47,6 @@ router.post('/students', authenticateToken, async (req, res) => {
 
     try {
 
-
         await addStudent(req.body);
 
         res.sendStatus(200)
@@ -62,38 +61,71 @@ router.post('/students', authenticateToken, async (req, res) => {
 
 })
 
-router.post('/drives', authenticateToken, async (req, res) => {
-    try {
-        var job = {
-        company_id: new ObjectId(req.body.company_id),
-        job_title: req.body.job_title,
-        job_description: req.body.job_description,
-        tenth_cutoff: req.body.tenth_cutoff,
-        twelfth_cutoff: req.body.twelfth_cutoff,
-        ug_cutoff: req.body.ug_cutoff,
-        job_locations: req.body.job_locations,
-        job_ctc: req.body.job_ctc,
-        branch: req.body.branch,
-        rounds: req.body.rounds,
-            students: [],
-            company_name: req.body.company_name
-    };
+router.post('/drives/upload', authenticateToken, upload.single('job_description_file'), async (req, res) => {
+    try {   
 
-        await companyColl.insertOne(job, {});
-
-        res.status(200).json({ message: "Drive Posted Success" });
+        console.log(req.file)
+        res.status(200).json({});
     }
     catch (err) {
-
         console.log(err);
         res.sendStatus(400);
+    }
+});
+
+router.post('/drives/', authenticateToken, async (req, res) => {
+    try {
+        const tempTime = new Date(req.body.registration_end_time);
+        const endTime = moment(req.body.registration_end_date)
+            .hour(tempTime.getHours())
+            .minutes(tempTime.getMinutes()).unix()
+
+        var branches = [];
+        Object.entries(req.body.branch).forEach((value) => {
+            if (value[1] == true)
+                branches.push(value[0]);
+        })
+
+        if (!req.body.company_id) {
+            res.sendStatus(400);
+            return;
+        }
+
+        var job = {
+            company_id: new ObjectId(req.body.company_id),
+            company_name: req.body.company_name,
+            job_title: req.body.job_title,
+            job_description: req.body.job_description,
+            tenth_cutoff: req.body.tenth_cutoff,
+            twelfth_cutoff: req.body.twelfth_cutoff,
+            ug_cutoff: req.body.ug_cutoff,
+            job_locations: req.body.job_locations,
+            job_ctc: req.body.job_ctc,
+            branch: branches,
+            rounds: req.body.rounds.map((round) => ({
+                round_details: round.round_details,
+            })),
+            registration_end: endTime,
+            registration_status: 'open',
+            current_status: 'Registration',
+            students: []
+        };
+
+        //const result =  await companyColl.insertOne(job, {});
+
+        console.log(job);
+
+        res.status(200).json(job);
+
+    } catch (error) {
+        res.sendStatus(400);
+        console.log(error);
     }
 })
 
 router.get('/companies', authenticateToken, async (req, res) => {
 
     const search = req.query.search;
-
     const companyList = await companyDBColl.find({
         'company_name': {
             $regex: search,
@@ -106,7 +138,6 @@ router.get('/companies', authenticateToken, async (req, res) => {
 })
 
 router.post('/companies', authenticateToken, async (req, res) => {
-
     var company = {
         company_name: req.body.company_name,
         company_website: req.body.company_website,
@@ -114,12 +145,11 @@ router.post('/companies', authenticateToken, async (req, res) => {
         queries: []
     }
     try {
-        res.status(200).json();
+        res.status(200).json({ message: "Company Added Successfully" });
     }
     catch (e) {
         res.sendStatus(404);
     }
-
 
 })
 
@@ -145,7 +175,6 @@ router.post('/alumnis', authenticateToken, async (req, res) => {
 
 })
 
-
 router.get('/drives', authenticateToken, async (req, res) => {
     const s = String(req.query.s) || '';
     const page = Number(req.query.page) || 1;
@@ -164,7 +193,6 @@ router.get('/drives', authenticateToken, async (req, res) => {
 
 })
 
-
 router.get('/drive/:drive_id', authenticateToken, async (req, res) => {
 
     try {
@@ -181,7 +209,7 @@ router.get('/drive/:drive_id', authenticateToken, async (req, res) => {
     }
 })
 
-router.put('/drive/:drive_id/', authenticateToken, async (req, res) => {
+router.get('/drive/:drive_id/', authenticateToken, async (req, res) => {
     try {
 
         const id = req.query.id;
@@ -233,8 +261,5 @@ router.get('/drive/:drive_id/rounds', authenticateToken, async (req, res) => {
         res.sendStatus(400);
     }
 })
-
-
-
 
 module.exports = router;
