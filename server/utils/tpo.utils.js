@@ -30,7 +30,7 @@ async function getDrives(s, page, limit) {
                                 job_title: 1,
                                 job_ctc: 1,
                                 registered_students: {
-                                    $size: "$students"
+                                    $size: "$registered_students"
                                 },
                                 registration_status: 1
                             }

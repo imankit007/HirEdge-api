@@ -1,7 +1,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { companyDBColl, alumniColl } = require('../utils/dbConfig');
+const { companyDBColl, alumniColl, companyColl } = require('../utils/dbConfig');
 const jwt = require('jsonwebtoken');
 const { ObjectId } = require('mongodb');
 const { getDriveData, getManageDriveData, getStudentDataForDrive, getRoundData } = require('../utils/dataFetching');
@@ -73,8 +73,10 @@ router.post('/drives/upload', authenticateToken, upload.single('job_description_
     }
 });
 
-router.post('/drives/', authenticateToken, async (req, res) => {
+router.post('/drives/', async (req, res) => {
     try {
+
+        console.log(req.body);
         const tempTime = new Date(req.body.registration_end_time);
         const endTime = moment(req.body.registration_end_date)
             .hour(tempTime.getHours())
@@ -99,19 +101,21 @@ router.post('/drives/', authenticateToken, async (req, res) => {
             tenth_cutoff: req.body.tenth_cutoff,
             twelfth_cutoff: req.body.twelfth_cutoff,
             ug_cutoff: req.body.ug_cutoff,
+            tier: req.body.tier,
             job_locations: req.body.job_locations,
             job_ctc: req.body.job_ctc,
             branch: branches,
-            rounds: req.body.rounds.map((round) => ({
-                round_details: round.round_details,
-            })),
+            // rounds: req.body.rounds.map((round) => ({
+            //     round_details: round.round_details,
+            // })),
             registration_end: endTime,
             registration_status: 'open',
             current_status: 'Registration',
-            students: []
+            registered_students: [],
+            shortlists: []
         };
 
-        //const result =  await companyColl.insertOne(job, {});
+        // const result = await companyColl.insertOne(job, {});
 
         console.log(job);
 
@@ -200,8 +204,9 @@ router.get('/drive/:drive_id', authenticateToken, async (req, res) => {
         if (!drive_id) {
             res.status(404).json({ message: 'Bad Request' })
         } else {
-            const result = await getDriveData(drive_id);
-            res.status(200).json(result);
+            const drive = await getDriveData(drive_id);
+            // const studentData = await getStudentDataForDrive(drive_id);
+            res.status(200).json({ drive });
         }
     }
     catch (error) {

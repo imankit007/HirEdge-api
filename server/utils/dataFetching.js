@@ -179,6 +179,29 @@ async function getDriveData(id) {
                     'company_details.interview_experiences': 0,
                     'company_details.placements': 0,
                 }
+            }, {
+                $lookup: {
+                    from: "Students",
+                    localField: "registered_students",
+                    foreignField: "user_id",
+                    as: "student_details"
+                }
+            }, {
+                $addFields: {
+                    student_details: {
+                        $function: {
+                            body: `function (data) {
+                                var studentData = {};
+                                for (var x of data) {
+                                    studentData[x.user_id] = x;
+                                }
+                                return studentData;
+                            }`,
+                            args: ["$student_details"],
+                            lang: "js"
+                        }
+                    }
+                }
             }
         ]).toArray()
         return data[0];
@@ -236,14 +259,14 @@ async function getStudentDataForDrive(id) {
                 }
             }, {
                 $project: {
-                    'registered': 1
+                    'registered_students': 1
                 }
             }, {
-                $unwind: "$registered"
+                $unwind: "$registered_students"
             }, {
                 $lookup: {
                     from: 'Students',
-                    localField: 'registered.id',
+                    localField: 'registered_students',
                     foreignField: 'user_id',
                     as: 'student_data'
                 }
@@ -251,25 +274,27 @@ async function getStudentDataForDrive(id) {
                 $replaceRoot: {
                     newRoot: {
                         $mergeObjects: [{ $arrayElemAt: ["$student_data", 0] }, "$$ROOT"]
-
                     }
                 }
             }, {
-                $addFields: {
-                    "status": '$registered.status'
-                }
-            }, {
                 $project: {
+                    "_id": 0,
                     "student_data": 0,
                     "password": 0,
-                    "registered": 0,
-
+                    "registered_students": 0,
                 }
             }
         ]
         ).toArray();
 
-        return data;
+        var studentData = {};
+
+        for (var x of data) {
+            studentData[x.user_id] = x;
+        }
+
+
+        return studentData;
 
     } catch (error) {
         console.log(error)

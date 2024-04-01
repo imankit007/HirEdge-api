@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 var cookieParser = require('cookie-parser');
 const morgan = require('morgan');
-const admin = require('firebase-admin')
 dotenv.config();
 const { studentColl, tpoColl, hodColl, alumniColl, companyColl, con } = require('./utils/dbConfig');
 var app = express();
@@ -16,13 +15,6 @@ app.use(cors({
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
-
-
-const serviceAccount = require('../hiredge-5cd96-0f8b736e7890.json');
-
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-})
 
 
 const { generateAuthToken, authenticateToken } = require('./utils/auth.utils')
@@ -38,6 +30,7 @@ const alumniRouter = require('./routes/alumni.router');
 
 const hodRouter = require('./routes/hod');
 const commonRouter = require('./routes/common.router');
+const { sendTestNotification } = require('./utils/messaging.utils');
 
 app.use('/student', studentRouter);
 app.use('/tpo', tpoRouter);
@@ -134,7 +127,7 @@ app.post('/login', async (req, res) => {
                     refresh_token
                 });
             } else {
-                res.status(400).json({ message: "Authentication Failed" })
+                res.status(400).json({ message: "Invalid User ID or Password" })
             }
     } catch (e) {
         console.log(e);
@@ -190,6 +183,24 @@ app.get("/", function (req, res) {
     })
 })
 
+app.get('/send', async function (req, res) {
+
+    try {
+        const response = await sendTestNotification();
+
+        console.log(response);
+
+        res.status(200).json({
+            message: response
+        })
+
+    } catch (error) {
+        res.sendStatus(400);
+        console.log(error);
+    }
+
+})
+
 
 app.listen(5000, async () => {
     console.log("Listening at PORT 5000");
@@ -197,3 +208,4 @@ app.listen(5000, async () => {
 
 
 
+module.exports = app;

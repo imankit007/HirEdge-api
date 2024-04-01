@@ -80,6 +80,7 @@ async function getDrives(s = '', page = 1, limit = 10, qualification) {
                             'company_website': '$companyDetails.company_website',
                             'tenth_cutoff': 1,
                             'twelfth_cutoff': 1,
+                            'tier': 1,
                             'ug_cutoff': 1,
                             'eligible': {
                                 $and: [
@@ -137,7 +138,7 @@ async function getDriveData(id, usn, qualification) {
                     'company_details.placements': 0,
                 }
             },
-            {
+            {   
                 $addFields: {
                     'eligible': {
                         $and: [
@@ -148,7 +149,7 @@ async function getDriveData(id, usn, qualification) {
                         ]
                     },
                     "registered": {
-                        $in: [usn, "$students.usn"]
+                        $in: [usn, "$registered_students"]
                     },
 
                 }
@@ -162,33 +163,54 @@ async function getDriveData(id, usn, qualification) {
     }
 }
 
-async function getParticipatingDrives(usn) {
+async function getParticipatingDrives(usn, page, limit) {
     try {
         const data = await companyColl.aggregate([
             {
                 $match: {
                     'students.usn': usn
                 }
-            }, {
-                $limit: 5
-            }, {
-                $project: {
-                    "company_id": 1,
-                    "company_name": 1,
-                    "job_title": 1,
-                    'current_status': 1,
-                    'status': {
-                        $filter: {
-                            input: '$students',
-                            cond: {
-                                $eq: ['$$this.usn', usn]
+            },
+            {
+                $facet: {
+                    metadata: [{
+                        $count: "totalCount"
+                    }],
+                    data: [{
+                        $skip: (page - 1) * limit
+                    }, {
+                            $limit: limit
+                        }, {
+                            $project: {
+                                "company_id": 1,
+                                "company_name": 1,
+                                "job_title": 1,
+                                'current_status': 1,
+                                'job_ctc': 1,
+                                "tier": 1,
+                                'status': {
+                                    $filter: {
+                                        input: '$students',
+                                        cond: {
+                                            $eq: ['$$this.usn', usn]
+                                        }
+                                    }
+                                }
                             }
-                        }
-                    }
+                        }]
                 }
             }
         ]).toArray();
-        return data;
+        return {
+            drives: {
+                metadata: {
+                    totalCount: data[0].metadata[0].totalCount,
+                    pageCount: Math.ceil(data[0].metadata[0].totalCount / limit),
+                    page: page
+                },
+                data: data[0].data
+            }
+        };
     } catch (error) {
         console.log(error);
         throw error;

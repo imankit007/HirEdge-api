@@ -50,17 +50,19 @@ router.get("/profile", authenticateToken, async (req, res) => {
 
 router.put('/profile', authenticateToken, async (req, res) => {
 
-    try {
+    try {   
 
-        const updates = {};
-        for (let [key, value] of Object.entries(req.body)) {
-            updates[key] = value;
-        }
-        await studentColl.findOneAndUpdate({
-            'user_id': req.user.user_id,
-        }, {
-            $set: updates
-        })
+        console.log(req.body);
+
+        // const updates = {};
+        // for (let [key, value] of Object.entries(req.body)) {
+        //     updates[key] = value;
+        // }
+        // await studentColl.findOneAndUpdate({
+        //     'user_id': req.user.user_id,
+        // }, {
+        //     $set: updates
+        // })
         res.sendStatus(200);
     } catch (error) {
         console.log(error);
@@ -88,8 +90,10 @@ router.get("/drives", authenticateToken, async (req, res) => {
 router.get('/drives/participated', authenticateToken, async (req, res) => {
     try {
 
-        const drives = await getParticipatingDrives(req.user.user_id);
+        const page = Number(req.query.page) || 1;
+        const limit = 5;
 
+        const drives = await getParticipatingDrives(req.user.user_id, page, limit);
 
         res.json(drives);
     } catch (error) {
