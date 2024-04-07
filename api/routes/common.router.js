@@ -42,7 +42,7 @@ router.get('/company', async (req, res) => {
     }
 })
 
-router.get('/company/:company_id/interviewexperiences', async (req, res) => {
+router.get('/company/:company_id/experiences', async (req, res) => {
 
     try {
 

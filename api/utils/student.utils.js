@@ -116,8 +116,6 @@ async function getDrives(s = '', page = 1, limit = 10, qualification) {
 
 async function getDriveData(id, usn, qualification) {
 
-
-
     try {
         const data = await companyColl.aggregate([
             {
@@ -156,7 +154,7 @@ async function getDriveData(id, usn, qualification) {
 
                 }
             }, {
-                $unset: ["students"]
+                $unset: ["registered_students"]
             }
         ]).toArray()
         return data[0];

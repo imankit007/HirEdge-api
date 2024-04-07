@@ -2,10 +2,12 @@ const express = require('express');
 const { alumniColl, companyDBColl, experienceColl } = require('../utils/dbConfig');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const { getCompanyDetails, getInterviewExperiencesOfCompany } = require('../utils/dataFetching');
+const { getInterviewExperiencesOfCompany, getCompanyListOptions, getCompanies } = require('../utils/dataFetching');
 const { ObjectId } = require('mongodb');
 // const { authenticateToken } = require('../utils/auth')
+const { } = require('../utils/dataFetching')
 
+const { getCompanyDetails } = require('../utils/alumni.utils')
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization']
@@ -26,13 +28,13 @@ function authenticateToken(req, res, next) {
 }
 
 
-router.get('/alumni/profile', authenticateToken, (req, res) => {
+router.get('/profile', authenticateToken, (req, res) => {
 
     alumniColl.findOne({
         'user_id': req.user.user_id
     }, {
-        $projection: {
-
+        projection: {
+            'password': false
         }
     }).then((user) => {
         res.status(200).send(user);
@@ -41,70 +43,73 @@ router.get('/alumni/profile', authenticateToken, (req, res) => {
     })
 });
 
-router.get('/alumni/companies', authenticateToken, async (req, res) => {
+router.get('/companies', async (req, res) => {
     try {
-        const search = req.query.search || '';
-        const limit = Number(req.query.limit) || 0;
-        const page = Number(req.query.page) - 1 || 0;
-        const skip = page * limit;
+        const search = String(req.query.s) || '';
+        const limit = Number(req.query.limit) || 10;
+        const page = Number(req.query.page) || 1;
 
-    const companyList = await companyDBColl.find({
-        'company_name': {
-            $regex: search,
-            $options: 'i'
-        }
-    }, { projection: { 'label': '$company_name', id: '$_id', _id: 0 } }).skip(skip).limit(limit).toArray();
+        const data = await getCompanies(search, page, limit);
 
-    res.status(200).json(companyList);
+        res.status(200).json(data);
     } catch (error) {
         console.error(error);
     }
 
 })
 
-router.get('/alumni/company', authenticateToken, async (req, res) => {
+router.get('/company/:company_id', authenticateToken, async (req, res) => {
 
     try {
-        const company_id = req.query.id;
+        const company_id = req.params.company_id;
 
         const data = await getCompanyDetails(company_id);
         res.status(200).json(data);
 
-    } catch (error) {
+    } catch (error) {   
         console.log(error)
     }
 
 });
 
-router.post('/alumni/experience', authenticateToken, async (req, res) => {
+router.post('/company/:company_id/experience', authenticateToken, async (req, res) => {
 
     try {
 
-        console.log(req.body);
+        const company_id = req.params.company_id;
 
-        const id = req.query.id;
+        const experience = {
+            experience: req.body.experience,
+            difficulty: req.body.difficulty,
+            important_topics: String(req.body.important_topics).split(',').map((item) => (item.trim())),
+            postedOn: Date.now(),
+            postedBy: {
+                role: 'alumni',
+                user_id: req.user.user_id
+            }
+        }
 
-
-
-        const exp = await experienceColl.insertOne(req.body);
+        const exp = await experienceColl.insertOne(experience);
 
         await companyDBColl.updateOne({
-            "_id": new ObjectId(id)
+            "_id": new ObjectId(company_id)
         }, {
             $push: {
                 "interview_experiences": exp.insertedId,
             }
         })
 
-        res.status(200).send(exp);
+
+        res.status(200).send({ message: "Experience posted successfully" });
 
     } catch (error) {
         console.error(error);
+        res.sendStatus(400);
     }
 
 });
 
-router.get('/alumni/experiences', authenticateToken, async (req, res) => {
+router.get('/experiences', authenticateToken, async (req, res) => {
 
     try {
 

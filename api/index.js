@@ -120,7 +120,7 @@ app.post('/login', async (req, res) => {
                     secure: true,
                     path: '/'
                 })
-                res.status(200).json({
+                res.status(200).json({  
                     user_id: req.body.user_id,
                     role: req.body.role,
                     access_token,

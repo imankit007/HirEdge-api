@@ -104,9 +104,12 @@ router.get('/drives/participated', authenticateToken, async (req, res) => {
 
 router.get("/drive/:drive_id", authenticateToken, async (req, res) => {
     const id = req.params.drive_id;
-    const studentData = await getQualification(req.user.user_id);
+
+    const user_id = String(req.user.user_id).toLowerCase();
+
+    const studentData = await getQualification(user_id);
     try {
-        let result = await getDriveData(id, req.user.user_id, studentData);
+        let result = await getDriveData(id, user_id, studentData);
         res.status(200).json(result);
     } catch (e) {
         console.log(e);
