@@ -55,12 +55,12 @@ app.post('/login', async (req, res) => {
 
     console.log(req.body);
 
-    req.body.user_id = String(req.body.user_id).toLowerCase().trim();
+
     let user = null;
-    try {
+    try {   
         if (req.body.role == 'student') {
             user = await studentColl.findOne({
-                'user_id': req.body.user_id,
+                'user_id': String(req.body.user_id).toLowerCase().trim(),
             }, {
                 projection: {
                     password: 1
@@ -69,7 +69,7 @@ app.post('/login', async (req, res) => {
         } else
         if (req.body.role == 'tpo') {
             user = await tpoColl.findOne({
-                'user_id': req.body.user_id
+                'user_id': String(req.body.user_id).toLowerCase().trim()
             }, {
                 projection: {
                     password: 1
@@ -78,7 +78,7 @@ app.post('/login', async (req, res) => {
         } else
         if (req.body.role == 'hod') {
             user = await hodColl.findOne({
-                'user_id': req.body.user_id
+                'user_id': String(req.body.user_id).trim()
             }, {
                 projection: {
                     password: 1
@@ -88,7 +88,7 @@ app.post('/login', async (req, res) => {
 
         if (req.body.role == 'alumni') {
             user = await alumniColl.findOne({
-                'user_id': req.body.user_id
+                'user_id': String(req.body.user_id).trim().toLowerCase()
             }, {
                 projection: {
                     password: 1

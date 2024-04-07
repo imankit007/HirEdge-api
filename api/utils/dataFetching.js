@@ -467,8 +467,10 @@ async function getCompanies(s, page, limit) {
 
 
 async function getCompanyListOptions(s, page) {
-
+    const limit = 10;
     try {
+
+        setTimeout(() => { }, 5000)
 
         const result = await companyDBColl.aggregate([
             {
@@ -477,6 +479,10 @@ async function getCompanyListOptions(s, page) {
                         $regex: s,
                         $options: "i"
                     },
+                }
+            }, {
+                $sort: {
+                    'company_name': 1
                 }
             },
             {
@@ -487,25 +493,39 @@ async function getCompanyListOptions(s, page) {
                         }
                     ],
                     data: [{
-                        $skip: (page - 1) * 50
-                    }, {
-                            $limit: 50
-                        }, {
+                        $skip: (page - 1) * 10
+                    },
+                        {
+                            $limit: 10
+                        },
+                        {
                             $project: {
-                                'title': "$company_name",
-                                "id": "$_id",
-                                "_id": 0
+                                'company_name': 1
                             }
-                        }]
+                        }
+                    ]
                 }
             }
         ]).toArray()
+
+        if (result[0].data.length == 0) {
+            return {
+                companies: {
+                    metadata: {
+                        totalCount: 0,
+                        pageCount: 1,
+                        page: 1,
+                    },
+                    data: []
+                }
+            }
+        }
 
         return {
             companies: {
                 metadata: {
                     totalCount: result[0].metadata[0].totalCount,
-                    pageCount: Math.ceil(result[0].metadata[0].totalCount / 50),
+                    pageCount: Math.ceil(result[0].metadata[0].totalCount / 10),
                     page: page,
                 },
                 data: result[0].data

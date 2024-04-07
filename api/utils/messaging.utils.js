@@ -7,8 +7,7 @@ admin.initializeApp({
 
 async function sendTestNotification() {
     try {
-        const token = "cU5_LfPVQS--EasGo1Yo9t:APA91bGSggeujNSalAXrNI1qnDlriU4YOV9g3cwTRVXr5aP5lc_KQfCdjOf2zUL8gEX73W0RlWDuGDOR5ixgOmJnIfRjWv18_4ggYivTW71VwiWanGBP-GyO0c9T9lxkIHoBXebZ8isS"
-
+        const topic = 'NewDrive'
         const payload = {
             notification: {
                 title: "FCM IS COOL !",
@@ -18,7 +17,7 @@ async function sendTestNotification() {
             }
         }
         const res = await admin.messaging().send({
-            token: token,
+            topic: topic,
             notification: {
                 title: "Student Profile",
                 body: "Student Profile has been Opened"

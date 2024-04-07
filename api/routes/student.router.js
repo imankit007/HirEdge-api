@@ -78,12 +78,13 @@ router.get("/drives", authenticateToken, async (req, res) => {
         const limit = Number(req.query.limit) || 10;
         const studentData = await getQualification(req.user.user_id);
 
+
         const data = await getDrives(s, page, limit, studentData);
 
         res.status(200).json(data);
     } catch (error) {
         console.log(error);
-        res.sendStatus(400);
+        res.sendStatus(400); ``
     }
 });
 
@@ -169,11 +170,7 @@ router.post(
     authenticateToken,
     async (req, res) => {
         try {
-        const company_id = req.params.company_id;
-
-        console.log(company_id);
-        console.log(req.body);
-
+            const company_id = req.params.company_id;
         res.sendStatus(200);
         } catch (error) {
             console.log(error);

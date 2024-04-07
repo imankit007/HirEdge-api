@@ -23,7 +23,7 @@ async function getProfile(user_id) {
 async function getQualification(user_id) {
     try {
 
-        const student = studentColl.findOne({ 'user_id': user_id },
+        const student = studentColl.findOne({ 'user_id': String(user_id).toLowerCase() },
             {
                 projection: {
                     "_id": 0,
@@ -42,7 +42,6 @@ async function getQualification(user_id) {
 
 async function getDrives(s = '', page = 1, limit = 10, qualification) {
     try {
-
         const current_time = moment().unix();
 
         var drives = await companyColl.aggregate([
@@ -116,6 +115,9 @@ async function getDrives(s = '', page = 1, limit = 10, qualification) {
 }
 
 async function getDriveData(id, usn, qualification) {
+
+
+
     try {
         const data = await companyColl.aggregate([
             {
@@ -201,6 +203,22 @@ async function getParticipatingDrives(usn, page, limit) {
                 }
             }
         ]).toArray();
+
+        if (data[0].data.length == 0) {
+
+            return {
+                drives: {
+                    metadata: {
+                        totalCount: 0,
+                        pageCount: 1,
+                        page: 1,
+                    },
+                    data: []
+                }
+            }
+
+        }
+
         return {
             drives: {
                 metadata: {
