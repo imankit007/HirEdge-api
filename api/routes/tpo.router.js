@@ -76,7 +76,6 @@ router.post('/drives/upload', authenticateToken, upload.single('job_description_
 router.post('/drives/', async (req, res) => {
     try {
 
-        console.log(req.body);
         const tempTime = new Date(req.body.registration_end_time);
         const endTime = moment(req.body.registration_end_date)
             .hour(tempTime.getHours())
@@ -88,21 +87,17 @@ router.post('/drives/', async (req, res) => {
                 branches.push(value[0]);
         })
 
-        if (!req.body.company_id) {
-            res.sendStatus(400);
-            return;
-        }
 
         var job = {
             company_id: new ObjectId(req.body.company_id),
             company_name: req.body.company_name,
             job_title: req.body.job_title,
             job_description: req.body.job_description,
-            tenth_cutoff: req.body.tenth_cutoff,
-            twelfth_cutoff: req.body.twelfth_cutoff,
-            ug_cutoff: req.body.ug_cutoff,
+            tenth_cutoff: Number(req.body.tenth_cutoff),
+            twelfth_cutoff: Number(req.body.twelfth_cutoff),
+            ug_cutoff: Number(req.body.ug_cutoff),
             tier: req.body.tier,
-            job_locations: req.body.job_locations,
+            job_locations: req.body.job_locations || [],
             job_ctc: req.body.job_ctc,
             branch: branches,
             // rounds: req.body.rounds.map((round) => ({
@@ -112,18 +107,18 @@ router.post('/drives/', async (req, res) => {
             registration_status: 'open',
             current_status: 'Registration',
             registered_students: [],
-            shortlists: []
+            updates: []
         };
 
-        // const result = await companyColl.insertOne(job, {});
+        const result = await companyColl.insertOne(job, {});
 
-        console.log(job);
 
-        res.status(200).json(job);
+        res.status(200).json(result);
 
     } catch (error) {
-        res.sendStatus(400);
         console.log(error);
+        res.sendStatus(400);
+        
     }
 })
 

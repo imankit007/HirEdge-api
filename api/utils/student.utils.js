@@ -23,7 +23,7 @@ async function getProfile(user_id) {
 async function getQualification(user_id) {
     try {
 
-        const student = studentColl.findOne({ 'user_id': String(user_id).toLowerCase() },
+        const student = studentColl.findOne({ 'user_id': String(user_id).toLowerCase().trim() },
             {
                 projection: {
                     "_id": 0,

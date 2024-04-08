@@ -186,23 +186,24 @@ async function getDriveData(id) {
                     foreignField: "user_id",
                     as: "student_details"
                 }
-            }, {
-                $addFields: {
-                    student_details: {
-                        $function: {
-                            body: `function (data) {
-                                var studentData = {};
-                                for (var x of data) {
-                                    studentData[x.user_id] = x;
-                                }
-                                return studentData;
-                            }`,
-                            args: ["$student_details"],
-                            lang: "js"
-                        }
-                    }
-                }
             }
+            //  {
+            //     $addFields: {
+            //         student_details: {
+            //             $function: {
+            //                 body: `function (data) {
+            //                     var studentData = {};
+            //                     for (var x of data) {
+            //                         studentData[x.user_id] = x;
+            //                     }
+            //                     return studentData;
+            //                 }`,
+            //                 args: ["$student_details"],
+            //                 lang: "js"
+            //             }
+            //         }
+            //     }
+            // }
         ]).toArray()
         return data[0];
     } catch (error) {
