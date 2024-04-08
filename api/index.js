@@ -101,13 +101,13 @@ app.post('/login', async (req, res) => {
             })
         } else
             if (req.body.password == user.password) {
-                const access_token = generateAuthToken({ user_id: req.body.user_id, role: req.body.role }, '1800s');
-                const refresh_token = generateAuthToken({ user_id: req.body.user_id, role: req.body.role }, `${7 * 24 * 60 * 60}s`);
+                const access_token = generateAuthToken({ user_id: String(req.body.user_id).toLowerCase().trim(), role: req.body.role }, '1800s');
+                const refresh_token = generateAuthToken({ user_id: String(req.body.user_id).toLowerCase().trim(), role: req.body.role }, `${7 * 24 * 60 * 60}s`);
 
                 const expirtAt = JSDatetoSQLDateTime(7 * 24 * 60 * 60)
 
                 con.execute('INSERT INTO auth (refresh_token, user_id, role, expiryAt )VALUES (?,?,?,?)', [
-                    refresh_token, req.body.user_id, req.body.role, expirtAt
+                    refresh_token, String(req.body.user_id).toLowerCase().trim(), req.body.role, expirtAt
                 ], function (err, results) {
                     console.log(err);
                 })
@@ -121,7 +121,7 @@ app.post('/login', async (req, res) => {
                     path: '/'
                 })
                 res.status(200).json({  
-                    user_id: req.body.user_id,
+                    user_id: String(req.body.user_id).toLowerCase().trim(),
                     role: req.body.role,
                     access_token,
                     refresh_token
