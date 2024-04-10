@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const { ObjectId } = require('mongodb');
 const { getDriveData, getManageDriveData, getStudentDataForDrive, getRoundData } = require('../utils/dataFetching');
 
-const { getDrives, getProfile, addStudent } = require('../utils/tpo.utils');
+const { getDrives, getProfile, addStudent, addCompany } = require('../utils/tpo.utils');
 
 const upload = require('./../middlewares/multer.config');
 
@@ -47,7 +47,26 @@ router.post('/students', authenticateToken, async (req, res) => {
 
     try {
 
-        await addStudent(req.body);
+
+        const student = {
+            usn: String(req.body.usn).toLowerCase().trim(),
+            first_name: req.body.first_name,
+            middle_name: req.body.middle_name,
+            last_name: req.body.last_name,
+            dob: req.body.dob,
+            email: req.body.email,
+            mobile: req.body.mobile,
+            gender: req.body.gender,
+            branch: req.body.branch,
+            tenth_percentage: parseFloat(req.body.tenth_percentage),
+            twelfth_percentage: parseFloat(req.body.twelfth_percentage),
+            ug_cgpa: parseFloat(req.body.ug_cgpa),
+            password: String(req.body.mobile).substring(6) + String(req.body.dob).substring(6)
+        }
+
+        await addStudent(student);
+
+        console.log(student);
 
         res.sendStatus(200)
 
@@ -141,8 +160,12 @@ router.post('/companies', authenticateToken, async (req, res) => {
         company_name: req.body.company_name,
         company_website: req.body.company_website,
         interview_experiences: [],
-        queries: []
+        placements: []
     }
+
+    await addCompany(company);
+
+
     try {
         res.status(200).json({ message: "Company Added Successfully" });
     }

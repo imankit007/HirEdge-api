@@ -6,7 +6,7 @@ var cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 dotenv.config();
 const { studentColl, tpoColl, hodColl, alumniColl, companyColl, con } = require('./utils/dbConfig');
-var app = express();
+const app = express();
 app.use(morgan("dev"))
 app.use(cors({
     origin: 'http://localhost:3000',
@@ -177,11 +177,6 @@ app.get('/logout', async (req, res) => {
     res.clearCookie('refresh_token').status(200).send("Logout Successful")
 })
 
-app.get("/", function (req, res) {
-    res.status(200).json({
-        message: "API is Working"
-    })
-})
 
 app.get('/send', async function (req, res) {
 
@@ -202,10 +197,11 @@ app.get('/send', async function (req, res) {
 })
 
 
-app.listen(5000, async () => {
-    console.log("Listening at PORT 5000");
+app.listen(5000, () => {
+    console.log("Server listening on port : 5000")
 })
 
 
 
-module.exports = app;
+
+module.exports = app;    

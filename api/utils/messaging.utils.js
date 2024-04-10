@@ -19,11 +19,12 @@ async function sendTestNotification() {
         const res = await admin.messaging().send({
             topic: topic,
             notification: {
-                title: "Student Profile",
-                body: "Student Profile has been Opened"
+                title: "New Drive Posted",
+                body: "A new Drive has been posted"
             },
+
             data: {
-                'link': 'hiredge://student/Profile'
+
             }
         })
 

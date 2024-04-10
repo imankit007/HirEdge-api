@@ -104,4 +104,18 @@ async function addStudent(student) {
 }
 
 
-module.exports = { getDrives, getProfile, addStudent }
+async function addCompany(company) {
+    try {
+
+
+
+        await companyDBColl.insertOne(company)
+
+
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+module.exports = { getDrives, getProfile, addStudent, addCompany }

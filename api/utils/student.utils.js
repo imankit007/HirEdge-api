@@ -142,8 +142,7 @@ async function getDriveData(id, usn, qualification) {
                 $addFields: {
                     'eligible': {
                         $and: [
-                            { $lte: ['$tenth_cutoff', qualification.tenth_percentage] }
-                            ,
+                            { $lte: ['$tenth_cutoff', qualification.tenth_percentage] },
                             { $lte: ['$twelfth_cutoff', qualification.twelfth_percentage] },
                             { $lte: ['$ug_cutoff', qualification.ug_cgpa] }
                         ]
