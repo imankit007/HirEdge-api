@@ -153,10 +153,7 @@ router.post("/drive/:drive_id/apply", authenticateToken, async (req, res) => {
             },
             {
                 $addToSet: {
-                    students: {
-                        "usn": student_id,
-                        "status": "registered"
-                    }
+                    "registered_students": student_id
                 },
             }
         );
