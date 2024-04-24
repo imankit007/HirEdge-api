@@ -32,7 +32,8 @@ async function getDrives(s, page, limit) {
                                 registered_students: {
                                     $size: "$registered_students"
                                 },
-                                registration_status: 1
+                                registration_status: 1,
+                                tier: 1
                             }
                         }
                     ]
