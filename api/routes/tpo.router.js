@@ -8,7 +8,6 @@ const { getManageDriveData, getStudentDataForDrive, getDriveData } = require('..
 
 const { getDrives, getProfile, addStudent, addCompany } = require('../utils/tpo.utils');
 
-const upload = require('./../middlewares/multer.config');
 
 const moment = require('moment-timezone');
 const { sendDriveUpdate, sendNewDriveNotification } = require('../utils/messaging.utils');
