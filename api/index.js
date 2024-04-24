@@ -168,23 +168,7 @@ app.get('/logout', async (req, res) => {
 })
 
 
-app.get('/send', async function (req, res) {
 
-    try {
-        const response = await sendTestNotification();
-
-        console.log(response);
-
-        res.status(200).json({
-            message: response
-        })
-
-    } catch (error) {
-        res.sendStatus(400);
-        console.log(error);
-    }   
-
-})
 
 
 app.listen(5000, () => {
