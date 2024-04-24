@@ -1,4 +1,7 @@
 const express = require('express')
+
+const PORT = process.env.PORT || 5000;
+
 const cors = require('cors')
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
@@ -171,8 +174,8 @@ app.get('/logout', async (req, res) => {
 
 
 
-app.listen(5000, () => {
-    console.log("Server listening on port : 5000")
+app.listen(PORT, () => {
+    console.log(`Server listening on port : ${PORT}`)
 })
 
 
