@@ -1,17 +1,17 @@
 
 const express = require('express');
 const router = express.Router();
-const { companyDBColl, alumniColl, companyColl } = require('../utils/dbConfig');
+const { companyDBColl, alumniColl, driveColl, studentColl } = require('../utils/dbConfig');
 const jwt = require('jsonwebtoken');
 const { ObjectId } = require('mongodb');
-const { getDriveData, getManageDriveData, getStudentDataForDrive, getRoundData } = require('../utils/dataFetching');
+const { getManageDriveData, getStudentDataForDrive, getDriveData } = require('../utils/dataFetching');
 
 const { getDrives, getProfile, addStudent, addCompany } = require('../utils/tpo.utils');
 
 const upload = require('./../middlewares/multer.config');
 
 const moment = require('moment-timezone');
-const multer = require('multer');
+const { sendDriveUpdate, sendNewDriveNotification } = require('../utils/messaging.utils');
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization']
@@ -66,8 +66,6 @@ router.post('/students', authenticateToken, async (req, res) => {
 
         await addStudent(student);
 
-        console.log(student);
-
         res.sendStatus(200)
 
     } catch (error) {
@@ -80,17 +78,6 @@ router.post('/students', authenticateToken, async (req, res) => {
 
 })
 
-router.post('/drives/upload', authenticateToken, upload.single('job_description_file'), async (req, res) => {
-    try {   
-
-        console.log(req.file)
-        res.status(200).json({});
-    }
-    catch (err) {
-        console.log(err);
-        res.sendStatus(400);
-    }
-});
 
 router.post('/drives/', async (req, res) => {
     try {
@@ -129,7 +116,9 @@ router.post('/drives/', async (req, res) => {
             updates: []
         };
 
-        const result = await companyColl.insertOne(job, {});
+        const result = await driveColl.insertOne(job, {});
+
+        await sendNewDriveNotification(company_name)
 
 
         res.status(200).json(result);
@@ -219,44 +208,98 @@ router.get('/drive/:drive_id', authenticateToken, async (req, res) => {
 
     try {
         const drive_id = req.params.drive_id;
-        if (!drive_id) {
-            res.status(404).json({ message: 'Bad Request' })
-        } else {
-            const drive = await getDriveData(drive_id);
-            // const studentData = await getStudentDataForDrive(drive_id);
+        const withStudentData = req.query.withStudentData;
+
+        const drive = await getManageDriveData(drive_id);
+        if (withStudentData == 'true') {
+            const studentData = await getStudentDataForDrive(drive_id);
+            res.status(200).json({ drive, studentData });
+        } else
             res.status(200).json({ drive });
-        }
+
     }
     catch (error) {
         console.log(error);
     }
 })
 
-router.get('/drive/:drive_id/', authenticateToken, async (req, res) => {
+
+router.post('/drive/:drive_id', authenticateToken, async (req, res) => {
     try {
 
-        const id = req.query.id;
-        if (!id)
-            res.status(404).json({ "message": "Bad Request" });
-        else {
+        const drive_id = req.params.drive_id;
+        const company_name = req.query.company_name;
 
-            const result = await getManageDriveData(id);
+        const driveData = await driveColl.findOne({
+            '_id': new ObjectId(drive_id)
+        })
 
-            res.status(200).json(result)
+
+        if (req.body.update_type === 'finallist') {
+
+            const inserted = await driveColl.updateOne({
+                _id: new ObjectId(drive_id)
+            }, {
+                $set: {
+                    current_status: 'ended'
+                },
+                $addToSet: {
+                    'placed_students': { $each: req.body.shortlist }
+                }
+            })
+
+            req.body.shortlist.forEach(async (item) => {
+                studentColl.updateOne({
+                    "user_id": item
+                }, {
+                    $addToSet: {
+                        "offers": {
+                            'tier': driveData.tier,
+                            'company_name': company_name,
+                            'job_role': driveData.job_title,
+                            'job_ctc': driveData.job_ctc
+                        }
+                    },
+
+                    $min: {
+                        'placed_tier': driveData.tier
+                    }
+                })
+            })
+
 
         }
+        else {
+            const inserted = await driveColl.updateOne({
+                _id: new ObjectId(drive_id)
+            }, {
+                $addToSet: {
+                    "updates": {
+                        update_type: req.body.update_type,
+                        update_message: req.body.update_message,
+                        shortlist: req.body.shortlist,
+                        postedOn: Date.now()
+                    }
+                }
+            })
+        }
 
-    } catch (err) {
-        console.log(err);
+        await sendDriveUpdate(company_name, req.body.update_type, req.body.update_message)
+
+        res.sendStatus(200);
+
+    } catch (error) {
+        console.log(error);
         res.sendStatus(400);
     }
 })
 
+
 router.get('/drive/:drive_id/students', authenticateToken, async (req, res) => {
     try {
         const id = req.query.id;
-        if (!id)
-            res.status(404).json({ "message": "Bad Request" });
+        // if (!id)
+        //     res.status(404).json({ "message": "Bad Request" });
 
         const data = await getStudentDataForDrive(id);
 

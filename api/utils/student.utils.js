@@ -1,5 +1,5 @@
 const { ObjectId } = require("mongodb");
-const { companyDBColl, companyColl, studentColl } = require("./dbConfig");
+const { companyDBColl, driveColl, studentColl } = require("./dbConfig");
 
 const moment = require("moment-timezone");
 async function getProfile(user_id) {
@@ -44,10 +44,10 @@ async function getDrives(s = '', page = 1, limit = 10, qualification) {
     try {
         const current_time = moment().unix();
 
-        var drives = await companyColl.aggregate([
+        var drives = await driveColl.aggregate([
             {
                 $lookup: {
-                    from: 'CompanyDB',
+                    from: 'Companies',
                     localField: 'company_id',
                     foreignField: '_id',
                     as: 'companyDetails',
@@ -117,14 +117,14 @@ async function getDrives(s = '', page = 1, limit = 10, qualification) {
 async function getDriveData(id, usn, qualification) {
 
     try {
-        const data = await companyColl.aggregate([
+        const data = await driveColl.aggregate([
             {
                 $match: {
                     '_id': new ObjectId(id)
                 }
             }, {
                 $lookup: {
-                    from: 'CompanyDB',
+                    from: 'Companies',
                     localField: 'company_id',
                     foreignField: '_id',
                     as: 'company_details',
@@ -164,10 +164,10 @@ async function getDriveData(id, usn, qualification) {
 
 async function getParticipatingDrives(usn, page, limit) {
     try {
-        const data = await companyColl.aggregate([
+        const data = await driveColl.aggregate([
             {
                 $match: {
-                    'students.usn': usn
+                    'registered_students': usn
                 }
             },
             {
@@ -187,14 +187,6 @@ async function getParticipatingDrives(usn, page, limit) {
                                 'current_status': 1,
                                 'job_ctc': 1,
                                 "tier": 1,
-                                'status': {
-                                    $filter: {
-                                        input: '$students',
-                                        cond: {
-                                            $eq: ['$$this.usn', usn]
-                                        }
-                                    }
-                                }
                             }
                         }]
                 }

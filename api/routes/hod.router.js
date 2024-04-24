@@ -1,7 +1,8 @@
 const express = require('express');
-const router = express.Router();
+const jwt = require("jsonwebtoken");
 
-// const { authenticateToken } = require('../utils/auth')
+const { getDeptPlacementData } = require('../utils/hod.utils');
+const router = express.Router();
 
 
 function authenticateToken(req, res, next) {
@@ -24,9 +25,18 @@ function authenticateToken(req, res, next) {
 }
 
 
-router.get('/tpo/profile', authenticateToken, (req, res) => {
-    res.send("Hello");
+router.get('/placementdata', authenticateToken, async (req, res) => {
+
+    const branch = String(req.user.user_id).toUpperCase();
+
+    const data = await getDeptPlacementData(branch)
+
+    res.status(200).json(data);
+
 })
+
+
+
 
 
 

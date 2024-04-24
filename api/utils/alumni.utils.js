@@ -1,5 +1,5 @@
 const { ObjectId } = require("mongodb");
-const { companyDBColl, companyColl } = require("./dbConfig");
+const { companyDBColl, driveColl } = require("./dbConfig");
 
 
 

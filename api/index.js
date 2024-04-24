@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 var cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 dotenv.config();
-const { studentColl, tpoColl, hodColl, alumniColl, companyColl, con } = require('./utils/dbConfig');
+const { studentColl, tpoColl, hodColl, alumniColl, } = require('./utils/dbConfig');
 const app = express();
 app.use(morgan("dev"))
 app.use(cors({
@@ -28,14 +28,14 @@ const tpoRouter = require('./routes/tpo.router');
 //router for alumni module
 const alumniRouter = require('./routes/alumni.router');
 
-const hodRouter = require('./routes/hod');
+const hodRouter = require('./routes/hod.router');
 const commonRouter = require('./routes/common.router');
 const { sendTestNotification } = require('./utils/messaging.utils');
 
 app.use('/student', studentRouter);
 app.use('/tpo', tpoRouter);
 app.use('/alumni',alumniRouter);
-app.use(hodRouter);
+app.use('/hod', hodRouter);
 app.use('/common', commonRouter);
 
 
@@ -63,7 +63,8 @@ app.post('/login', async (req, res) => {
                 'user_id': String(req.body.user_id).toLowerCase().trim(),
             }, {
                 projection: {
-                    password: 1
+                    password: 1,
+
                 }
             })
         } else
@@ -72,7 +73,8 @@ app.post('/login', async (req, res) => {
                 'user_id': String(req.body.user_id).toLowerCase().trim()
             }, {
                 projection: {
-                    password: 1
+                    password: 1,
+
                 }
             })
         } else
@@ -81,7 +83,8 @@ app.post('/login', async (req, res) => {
                 'user_id': String(req.body.user_id).trim()
             }, {
                 projection: {
-                    password: 1
+                    password: 1,
+
                 }
             })
         } else
@@ -91,7 +94,8 @@ app.post('/login', async (req, res) => {
                 'user_id': String(req.body.user_id).trim().toLowerCase()
             }, {
                 projection: {
-                    password: 1
+                    password: 1,
+
                 }
             })
         }
@@ -99,19 +103,12 @@ app.post('/login', async (req, res) => {
             res.status(401).json({
                 'message': 'User ID does not exist'
             })
-        } else
-            if (req.body.password == user.password) {
+            return;
+        }
+
+        if (req.body.password == user.password) {
                 const access_token = generateAuthToken({ user_id: String(req.body.user_id).toLowerCase().trim(), role: req.body.role }, '1800s');
                 const refresh_token = generateAuthToken({ user_id: String(req.body.user_id).toLowerCase().trim(), role: req.body.role }, `${7 * 24 * 60 * 60}s`);
-
-                const expirtAt = JSDatetoSQLDateTime(7 * 24 * 60 * 60)
-
-                con.execute('INSERT INTO auth (refresh_token, user_id, role, expiryAt )VALUES (?,?,?,?)', [
-                    refresh_token, String(req.body.user_id).toLowerCase().trim(), req.body.role, expirtAt
-                ], function (err, results) {
-                    console.log(err);
-                })
-
 
                 res.cookie('refresh_token', refresh_token, {
                     httpOnly: true,
@@ -126,6 +123,7 @@ app.post('/login', async (req, res) => {
                     access_token,
                     refresh_token
                 });
+
             } else {
                 res.status(400).json({ message: "Invalid User ID or Password" })
             }
@@ -140,14 +138,12 @@ app.get('/refresh', async (req, res) => {
     if (refreshToken == "undefined" || !refreshToken) {
         res.sendStatus(401);
     } else {
-        con.execute('SELECT * from `auth` WHERE `refresh_token` = ?', [refreshToken], function (err, results) {
-            if (err) throw err;
-            if (results.length == 0) return res.sendStatus(401);
             jwt.verify(
-                results[0].refresh_token,
+                refreshToken,
                 process.env.TOKEN_SECRET, (err, decoded) => {
-                    if (err || results[0].user_id.toLowerCase() !== decoded.user_id.toLowerCase()) {
-                        return res.sendStatus(403);
+                    if (err) {
+                        res.sendStatus(403);
+                        return;
                     }
                     const access_token = jwt.sign({
                         'user_id': decoded.user_id,
@@ -163,17 +159,11 @@ app.get('/refresh', async (req, res) => {
                     })
                 }
             )
-        })
     }
+
 })
 
 app.get('/logout', async (req, res) => {
-    const cookies = req.cookies;
-    const refreshToken = cookies.refresh_token;
-
-    con.execute('DELETE FROM auth where refresh_token=?', [refreshToken], function (err, results) {
-        if (err) throw err;
-    })
     res.clearCookie('refresh_token').status(200).send("Logout Successful")
 })
 
@@ -192,7 +182,7 @@ app.get('/send', async function (req, res) {
     } catch (error) {
         res.sendStatus(400);
         console.log(error);
-    }
+    }   
 
 })
 

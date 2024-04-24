@@ -1,6 +1,5 @@
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
-const mysql = require('mysql2');
 
 const client = new MongoClient(process.env.MONGODB_URL, {
     serverApi: {
@@ -10,18 +9,6 @@ const client = new MongoClient(process.env.MONGODB_URL, {
     }
 })
 
-var con = mysql.createConnection({
-    host: process.env.SQL_URL,
-    user: process.env.SQL_USER,
-    password: process.env.SQL_PASSWORD,
-    database: process.env.SQL_DB
-})
-
-
-con.connect(function (err) {
-    if (err) throw err;
-    console.log("SQL Connected");
-})
 
 
 
@@ -37,8 +24,9 @@ const studentColl = DB.collection("Students");
 const hodColl = DB.collection("HOD");
 const tpoColl = DB.collection("TPO");
 const alumniColl = DB.collection("Alumni");
-const companyColl = DB.collection("Company");
-const companyDBColl = DB.collection("CompanyDB");
+const driveColl = DB.collection("Drives");
+const companyDBColl = DB.collection("Companies");
 const experienceColl = DB.collection("Experiences");
+const updatesColl = DB.collection("Updates");
 
-module.exports = { studentColl, hodColl, tpoColl, alumniColl, companyColl, companyDBColl, con, experienceColl }
+module.exports = { studentColl, hodColl, tpoColl, alumniColl, driveColl, companyDBColl, experienceColl, updatesColl }

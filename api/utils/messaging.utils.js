@@ -5,30 +5,17 @@ admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
 });
 
-async function sendTestNotification() {
+async function sendNewDriveNotification(company_name) {
     try {
         const topic = 'NewDrive'
-        const payload = {
-            notification: {
-                title: "FCM IS COOL !",
-                body: "Notification has been recieved",
-                content_available: "true",
-                image: "https://i.ytimg.com/vi/iosNuIdQoy8/maxresdefault.jpg"
-            }
-        }
+
         const res = await admin.messaging().send({
             topic: topic,
             notification: {
                 title: "New Drive Posted",
-                body: "A new Drive has been posted"
-            },
-
-            data: {
-
+                body: `Company: ${company_name}\n`
             }
         })
-
-        return res;
     }
     catch (error) {
         console.log(error);
@@ -36,4 +23,23 @@ async function sendTestNotification() {
 
 }
 
-module.exports = { sendTestNotification }
+async function sendDriveUpdate(company_name, update_type, update_message) {
+    try {
+
+        const topic = 'NewDrive';
+        const res = await admin.messaging().send({
+            topic: topic,
+            notification: {
+                title: `${company_name} Drive Update - ${update_type}`,
+                body: update_message
+            },
+        })
+
+
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+
+module.exports = { sendDriveUpdate, sendNewDriveNotification }

@@ -1,12 +1,12 @@
 const { ObjectId } = require("mongodb");
-const { companyDBColl, companyColl, tpoColl, studentColl } = require("./dbConfig");
+const { companyDBColl, driveColl, tpoColl, studentColl } = require("./dbConfig");
 
 
 
 async function getDrives(s, page, limit) {
 
     try {
-        var result = await companyColl.aggregate([
+        var result = await driveColl.aggregate([
             {
 
                 $match: {
@@ -90,13 +90,12 @@ async function addStudent(student) {
             branch: student.branch,
             tenth_percentage: parseFloat(student.tenth_percentage),
             twelfth_percentage: parseFloat(student.twelfth_percentage),
-            ug_cgpa: parseFloat(student.ug_cgpa)
-
+            ug_cgpa: parseFloat(student.ug_cgpa),
+            password: student.password,
         }
 
         await studentColl.insertOne(student)
 
-        console.log(student);
 
     } catch (error) {
         throw error;
@@ -108,10 +107,23 @@ async function addCompany(company) {
     try {
 
 
-
         await companyDBColl.insertOne(company)
 
 
+    } catch (error) {
+        throw error;
+    }
+}
+
+async function endDrive(drive_id) {
+    try {
+        await driveColl.updateOne({
+            _id: new ObjectId(drive_id)
+        }, {
+            $set: {
+                "registration_status": "Completed"
+            }
+        })
     } catch (error) {
         throw error;
     }

@@ -1,5 +1,5 @@
 const { ObjectId } = require("mongodb");
-const { companyDBColl, companyColl } = require("./dbConfig");
+const { companyDBColl, driveColl } = require("./dbConfig");
 
 async function getTotalOffersInYear(year) {
     try {
@@ -114,10 +114,10 @@ async function getOffersByYear(year, pageNumber = 1, pageSize = 10, sort = 'asc'
 async function getOngoingDrives(page = 1, limit = 10) {
 
     try {
-        var result = await companyColl.aggregate([
+        var result = await driveColl.aggregate([
             {
                 $lookup: {
-                    from: 'CompanyDB',
+                    from: 'Companies',
                     localField: 'company_id',
                     foreignField: '_id',
                     as: 'companyDetails',
@@ -159,14 +159,14 @@ async function getOngoingDrives(page = 1, limit = 10) {
 
 async function getDriveData(id) {
     try {
-        const data = await companyColl.aggregate([
+        const data = await driveColl.aggregate([
             {
                 $match: {
                     '_id': new ObjectId(id)
                 }
             }, {
                 $lookup: {
-                    from: 'CompanyDB',
+                    from: 'Companies',
                     localField: 'company_id',
                     foreignField: '_id',
                     as: 'company_details',
@@ -187,23 +187,6 @@ async function getDriveData(id) {
                     as: "student_details"
                 }
             }
-            //  {
-            //     $addFields: {
-            //         student_details: {
-            //             $function: {
-            //                 body: `function (data) {
-            //                     var studentData = {};
-            //                     for (var x of data) {
-            //                         studentData[x.user_id] = x;
-            //                     }
-            //                     return studentData;
-            //                 }`,
-            //                 args: ["$student_details"],
-            //                 lang: "js"
-            //             }
-            //         }
-            //     }
-            // }
         ]).toArray()
         return data[0];
     } catch (error) {
@@ -211,49 +194,10 @@ async function getDriveData(id) {
     }
 }
 
-async function getManageDriveData(id) {
-    try {
-        const data = await companyColl.aggregate([
-            {
-                $match: {
-                    '_id': new ObjectId(id)
-                }
-            }, {
-                $lookup: {
-                    from: 'CompanyDB',
-                    localField: 'company_id',
-                    foreignField: '_id',
-                    as: 'company_details',
-                }
-            }, {
-                $unwind: "$company_details"
-            }, {
-                $project: {
-                    '_id': 1,
-                    'job_title': 1,
-                    'tenth_cutoff': 1,
-                    'twelfth_cutoff': 1,
-                    'ug_cutoff': 1,
-                    'job_location': 1,
-                    'job_ctc': 1,
-                    'branch': 1,
-                    'rounds': 1,
-                    'job_description': 1,
-                    'company_details.company_name': 1,
-                    'company_details.company_website': 1,
-                }
-            }
-        ]).toArray()
-        return data[0];
-    } catch (e) {
-        console.log(e)
-    }
-}
-
 async function getStudentDataForDrive(id) {
     try {
 
-        const data = await companyColl.aggregate([
+        const data = await driveColl.aggregate([
             {
                 $match: {
                     '_id': new ObjectId(id)
@@ -293,8 +237,6 @@ async function getStudentDataForDrive(id) {
         for (var x of data) {
             studentData[x.user_id] = x;
         }
-
-
         return studentData;
 
     } catch (error) {
@@ -303,21 +245,44 @@ async function getStudentDataForDrive(id) {
 }
 
 
-async function getRoundData(id) {
+async function getManageDriveData(id) {
     try {
-
-        const data = await companyColl.findOne({
-            "_id": new ObjectId(id)
-        }, {
-            projection: {
-                "rounds": 1
+        const data = await driveColl.aggregate([
+            {
+                $match: {
+                    '_id': new ObjectId(id)
+                }
+            }, {
+                $lookup: {
+                    from: 'Companies',
+                    localField: 'company_id',
+                    foreignField: '_id',
+                    as: 'company_details',
+                }
+            }, {
+                $unwind: "$company_details"
+            }, {
+                $project: {
+                    '_id': 1,
+                    'job_title': 1,
+                    'tenth_cutoff': 1,
+                    'twelfth_cutoff': 1,
+                    'ug_cutoff': 1,
+                    'job_locations': 1,
+                    'job_ctc': 1,
+                    'branch': 1,
+                    'job_description': 1,
+                    'company_details.company_name': 1,
+                    'company_details.company_website': 1,
+                }
             }
-        })
-        return data['rounds']
-    } catch (error) {
-        console.log(error);
+        ]).toArray()
+        return data[0];
+    } catch (e) {
+        console.log(e)
     }
-};
+}
+
 
 
 async function getCompanyDetails(id) {
@@ -543,7 +508,7 @@ async function getCompanyListOptions(s, page) {
 module.exports = {
     getTotalOffersInYear, getOffersByYear,
     getOngoingDrives, getDriveData, getManageDriveData,
-    getStudentDataForDrive, getRoundData, getCompanyDetails,
+    getStudentDataForDrive, getCompanyDetails,
     getInterviewExperiencesOfCompany, getPrevYearOfferCount, getCurrYearOfferCount, getCompanies,
     getCompanyListOptions
 }
