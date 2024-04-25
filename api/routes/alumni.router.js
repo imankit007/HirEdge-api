@@ -31,7 +31,7 @@ function authenticateToken(req, res, next) {
 router.get('/profile', authenticateToken, (req, res) => {
 
     alumniColl.findOne({
-        'user_id': req.user.user_id
+        'email': req.user.user_id
     }, {
         projection: {
             'password': false

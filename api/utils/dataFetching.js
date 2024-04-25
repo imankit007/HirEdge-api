@@ -274,6 +274,7 @@ async function getManageDriveData(id) {
                     'job_description': 1,
                     'company_details.company_name': 1,
                     'company_details.company_website': 1,
+                    'updates': 1
                 }
             }
         ]).toArray()

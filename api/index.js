@@ -94,7 +94,7 @@ app.post('/login', async (req, res) => {
 
         if (req.body.role == 'alumni') {
             user = await alumniColl.findOne({
-                'user_id': String(req.body.user_id).trim().toLowerCase()
+                'email': String(req.body.user_id).trim().toLowerCase()
             }, {
                 projection: {
                     password: 1,
@@ -136,6 +136,7 @@ app.post('/login', async (req, res) => {
 })
 
 app.get('/refresh', async (req, res) => {
+    console.log('refresh called')
     const cookies = req.cookies;
     let refreshToken = cookies.refresh_token;
     if (refreshToken == "undefined" || !refreshToken) {
@@ -169,9 +170,6 @@ app.get('/refresh', async (req, res) => {
 app.get('/logout', async (req, res) => {
     res.clearCookie('refresh_token').status(200).send("Logout Successful")
 })
-
-
-
 
 
 app.listen(PORT, () => {

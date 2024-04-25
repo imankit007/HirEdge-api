@@ -158,28 +158,32 @@ router.post('/companies', authenticateToken, async (req, res) => {
         res.status(200).json({ message: "Company Added Successfully" });
     }
     catch (e) {
-        res.sendStatus(404);
+        res.sendStatus(400);
     }
 
 })
 
-router.post('/alumnis', authenticateToken, async (req, res) => {
+router.post('/alumni', authenticateToken, async (req, res) => {
 
     try {
 
         var user = {
-            user_id: req.body.user_id,
             first_name: req.body.first_name,
             middle_name: req.body.middle_name,
             last_name: req.body.last_name,
-            dob: req.body.dob,
+            dob: new Date(req.body.dob).toLocaleDateString(),
             email: req.body.email,
-            password: 'abcd1234'
+            mobile: req.body.mobile,
+            password: String(req.body.mobile).substring(6) + new Date(req.body.dob).toLocaleTimeString().substring(6)
         }
 
         await alumniColl.insertOne(user)
-        res.status(200).json(user);
+        console.log(user);
+        res.status(200).json({
+            message: "Alumni Added Successfully"
+        });
     } catch (e) {
+        res.sendStatus(400)
         console.log(e);
     }
 
