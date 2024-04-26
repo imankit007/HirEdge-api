@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 
 const {
     studentColl,
-    companyColl,
+    driveColl,
     companyDBColl,
 } = require("../utils/dbConfig");
 const { UUID, ObjectId } = require("mongodb");
@@ -147,7 +147,7 @@ router.post("/drive/:drive_id/apply", authenticateToken, async (req, res) => {
         const drive_id = req.params.drive_id;
         const student_id = req.user.user_id;
 
-        const result = companyColl.findOneAndUpdate(
+        const result = driveColl.findOneAndUpdate(
             {
                 _id: new ObjectId(drive_id),
             },
