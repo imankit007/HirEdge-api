@@ -64,7 +64,7 @@ async function getDeptPlacementData(dept) {
                                         input: "$offers",
                                         as: "offer",
                                         cond: {
-                                            $eq: ["$$offer.tier", 1]
+                                            $eq: ["$$offer.tier", 2]
                                         }
                                     }
                                 }
@@ -87,7 +87,7 @@ async function getDeptPlacementData(dept) {
                                         input: "$offers",
                                         as: "offer",
                                         cond: {
-                                            $eq: ["$$offer.tier", 1]
+                                            $eq: ["$$offer.tier", 3]
                                         }
                                     }
                                 }
@@ -111,7 +111,7 @@ async function getDeptPlacementData(dept) {
                                         input: "$offers",
                                         as: "offer",
                                         cond: {
-                                            $eq: ["$$offer.tier", 1]
+                                            $eq: ["$$offer.tier", 0]
                                         }
                                     }
                                 }
