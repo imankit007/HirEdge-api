@@ -8,6 +8,7 @@ const {
     studentColl,
     driveColl,
     companyDBColl,
+    experienceColl
 } = require("../utils/dbConfig");
 const { UUID, ObjectId } = require("mongodb");
 const {
@@ -171,7 +172,29 @@ router.post(
     async (req, res) => {
         try {
             const company_id = req.params.company_id;
-        res.sendStatus(200);
+            const experience = {
+                experience: req.body.experience,
+                difficulty: req.body.difficulty,
+                important_topics: String(req.body.important_topics).split(',').map((item) => (item.trim())),
+                postedOn: Date.now(),
+                postedBy: {
+                    role: 'Student',
+                    user_id: req.user.user_id
+                }
+            }
+
+            const exp = await experienceColl.insertOne(experience);
+
+            await companyDBColl.updateOne({
+                "_id": new ObjectId(company_id)
+            }, {
+                $push: {
+                    "interview_experiences": exp.insertedId,
+                }
+            })
+
+
+            res.status(200).send({ message: "Experience posted successfully" });
         } catch (error) {
             console.log(error);
             res.sendStatus(400);
